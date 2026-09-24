@@ -4,6 +4,7 @@ import { Button, IconButton } from '../components/ui'
 import { useProjectStore } from '../store/projectStore'
 import { useUi } from '../store/uiStore'
 import { silence, type TourStep } from './steps'
+import { APP_BUILD_LABEL } from '../version'
 import { useTour } from './tourStore'
 
 const PAD = 8
@@ -225,7 +226,11 @@ function Welcome() {
           Nie teraz
         </Button>
       </div>
-      <p className="text-center text-[11px] text-muted">Poradnik uruchomisz w każdej chwili przyciskiem „?” u góry ekranu.</p>
+      <p className="text-center text-[11px] text-muted">
+        Poradnik uruchomisz w każdej chwili przyciskiem „?” u góry ekranu.
+        <br />
+        Wersja aplikacji: {APP_BUILD_LABEL}
+      </p>
     </Modal>
   )
 }

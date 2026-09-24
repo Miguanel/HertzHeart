@@ -1,10 +1,14 @@
+import os
+
 from django.conf import settings
 from django.http import FileResponse, HttpResponse, JsonResponse
 from django.views.decorators.cache import never_cache
 
 
 def health(request):
-    return JsonResponse({"status": "ok"})
+    # RENDER_GIT_COMMIT ustawia Render – pozwala sprawdzić, która wersja jest wdrożona.
+    commit = os.environ.get("RENDER_GIT_COMMIT", "")[:7] or None
+    return JsonResponse({"status": "ok", "commit": commit})
 
 
 @never_cache

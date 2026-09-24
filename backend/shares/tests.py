@@ -38,4 +38,4 @@ class SpaFallbackTests(TestCase):
         self.assertEqual(self.client.get("/s/abcdef/").status_code, 200)
 
     def test_health(self):
-        self.assertEqual(self.client.get("/api/health/").json(), {"status": "ok"})
+        self.assertEqual(self.client.get("/api/health/").json()["status"], "ok")

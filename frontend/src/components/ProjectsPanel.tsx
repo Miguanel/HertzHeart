@@ -6,6 +6,7 @@ import { compositionToFile, downloadBlob } from '../share/codec'
 import { useSaveStatus } from '../store/autosave'
 import { useProjectStore } from '../store/projectStore'
 import { openComposition } from '../store/session'
+import { APP_BUILD_LABEL } from '../version'
 import { Button, IconButton } from './ui'
 
 const dateFmt = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'medium', timeStyle: 'short' })
@@ -137,6 +138,8 @@ export function ProjectsPanel({ onOpened }: { onOpened: () => void }) {
           )
         })}
       </ul>
+
+      <p className="pt-2 text-center text-[11px] text-muted">Wersja aplikacji: {APP_BUILD_LABEL}</p>
     </div>
   )
 }

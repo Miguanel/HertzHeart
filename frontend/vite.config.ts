@@ -5,6 +5,10 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  define: {
+    // znacznik wersji widoczny w aplikacji – pozwala sprawdzić, czy przeglądarka ma najnowsze wdrożenie
+    __APP_BUILD__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -30,6 +34,10 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Nowy service worker przejmuje stronę od razu, zamiast czekać na zamknięcie wszystkich kart.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/admin/, /^\/static\//],
