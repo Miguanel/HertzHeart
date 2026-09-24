@@ -1,0 +1,30 @@
+# Blueprint Render.com: Dashboard -> New -> Blueprint -> wskaż repozytorium.
+services:
+  - type: web
+    name: heartzheart
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health/
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: heartzheart-db
+          property: connectionString
+      # Konto do /admin/ – wartości podajesz w panelu Render przy pierwszym wdrożeniu.
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+
+databases:
+  - name: heartzheart-db
+    plan: free
+    region: frankfurt
