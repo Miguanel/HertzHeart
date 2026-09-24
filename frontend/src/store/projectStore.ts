@@ -4,7 +4,6 @@ import { temporal } from 'zundo'
 import {
   createClip,
   createComposition,
-  createTrack,
   makePreset,
   normalizeEnvelope,
   scaleEnvelope,
@@ -15,7 +14,7 @@ import type { Clip, Composition, EnvelopePoint, Track } from '../model/schema'
 import { MAX_TIME_S, MIN_CLIP_S } from '../model/schema'
 import { clamp, round } from '../model/time'
 
-type TrackPatch = Partial<Pick<Track, 'name' | 'frequencyMilliHz' | 'waveform' | 'volume' | 'muted'>>
+type TrackPatch = Partial<Pick<Track, 'name' | 'frequencyMilliHz' | 'waveform' | 'volume' | 'muted' | 'pan'>>
 
 export interface ProjectState {
   composition: Composition
@@ -25,7 +24,7 @@ export interface ProjectState {
   loadComposition: (comp: Composition) => void
   setTitle: (title: string) => void
   setMasterVolume: (volume: number) => void
-  addTrack: (name: string, frequencyMilliHz: number, libraryRef?: string) => void
+  addTracks: (tracks: Track[]) => void
   updateTrack: (trackId: string, patch: TrackPatch) => void
   removeTrack: (trackId: string) => void
   addClip: (trackId: string, start?: number) => void
@@ -104,13 +103,13 @@ export const useProjectStore = create<ProjectState>()(
 
         setMasterVolume: (volume) => mutate((c) => void (c.masterVolume = clamp(volume, 0, 1))),
 
-        addTrack: (name, frequencyMilliHz, libraryRef) =>
+        addTracks: (tracks) =>
           set((s) => {
-            const track = createTrack(name, frequencyMilliHz, libraryRef)
-            s.composition.tracks.push(track)
+            if (!tracks.length) return
+            s.composition.tracks.push(...tracks)
             touch(s.composition)
-            s.selectedTrackId = track.id
-            s.selectedClipId = track.clips[0].id
+            s.selectedTrackId = tracks[0].id
+            s.selectedClipId = tracks[0].clips[0]?.id ?? null
           }),
 
         updateTrack: (trackId, patch) =>

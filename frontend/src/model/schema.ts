@@ -36,6 +36,8 @@ export const TrackSchema = z.object({
   libraryRef: z.string().max(64).optional(),
   waveform: z.enum(WAVEFORMS),
   volume: z.number().min(0).max(1),
+  /** Kanał stereo: -1 = lewy, 0 = oba, 1 = prawy. Starsze projekty nie mają tego pola. */
+  pan: z.number().min(-1).max(1).default(0),
   muted: z.boolean(),
   clips: z.array(ClipSchema).max(256),
 })
@@ -52,11 +54,26 @@ export const CompositionSchema = z.object({
 
 export const LibraryFrequencySchema = z.object({
   id: z.string(),
+  key: z.string().nullish(),
   name: z.string(),
   frequencyMilliHz: z.number().int().min(MIN_FREQ_MHZ).max(MAX_FREQ_MHZ),
+  /** Dudnienie binauralne: lewy kanał = frequency, prawy = frequency + beat. */
+  binauralBeatMilliHz: z.number().int().positive().nullish(),
   category: z.string(),
   description: z.string().default(''),
+  info: z.string().default(''),
   tags: z.array(z.string()).default([]),
+})
+
+/** Zestaw (gotowy projekt) pobierany z API; `data` walidowane dopiero przy otwarciu. */
+export const RemotePresetSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  category: z.string(),
+  description: z.string().default(''),
+  info: z.string().default(''),
+  headphones: z.boolean().default(false),
+  data: z.unknown(),
 })
 
 export type Waveform = (typeof WAVEFORMS)[number]
@@ -66,3 +83,4 @@ export type Clip = z.infer<typeof ClipSchema>
 export type Track = z.infer<typeof TrackSchema>
 export type Composition = z.infer<typeof CompositionSchema>
 export type LibraryFrequency = z.infer<typeof LibraryFrequencySchema>
+export type RemotePreset = z.infer<typeof RemotePresetSchema>

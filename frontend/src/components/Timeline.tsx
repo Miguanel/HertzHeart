@@ -9,7 +9,7 @@ import { useProjectStore } from '../store/projectStore'
 import { envelopeArea, envelopeLine, niceStep } from './envelopePath'
 import { Button, FrequencyField, IconButton, Panel, Slider } from './ui'
 
-const HEADER_W = 248
+const HEADER_W = 336
 const RULER_H = 28
 
 function useWidth<T extends HTMLElement>() {
@@ -30,10 +30,22 @@ export function Timeline({ onOpenLibrary }: { onOpenLibrary: () => void }) {
   const [scrollerRef, viewW] = useWidth<HTMLDivElement>()
   const [zoom, setZoom] = useState<number | null>(null)
   const playheadRef = useRef<HTMLDivElement>(null)
+  const selectedTrackId = useProjectStore((s) => s.selectedTrackId)
+  const trackCount = comp.tracks.length
+  const prevCount = useRef(trackCount)
+
+  // Nowo dodana ścieżka zawsze trafia w pole widzenia (na telefonie była ukryta poniżej).
+  useEffect(() => {
+    const added = trackCount > prevCount.current
+    prevCount.current = trackCount
+    if (!added || !selectedTrackId) return
+    const row = document.querySelector(`[data-track-id="${selectedTrackId}"]`)
+    row?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [trackCount, selectedTrackId])
 
   const wide = viewW >= 640
   const headerW = wide ? HEADER_W : 0
-  const laneH = wide ? 88 : 64
+  const laneH = wide ? 84 : 60
   const duration = compositionDuration(comp)
   const span = Math.max(duration * 1.08 + 5, 60)
   const fitPps = Math.max(0.05, (viewW - headerW - 12) / span)
@@ -55,7 +67,7 @@ export function Timeline({ onOpenLibrary }: { onOpenLibrary: () => void }) {
 
   return (
     <Panel
-      title={`Oś czasu · ${comp.tracks.length} ${comp.tracks.length === 1 ? 'ścieżka' : 'ścieżek'}`}
+      title={`Oś czasu · ${trackCount} ${trackLabel(trackCount)}`}
       actions={
         <>
           <IconButton size="sm" icon="zoomOut" label="Oddal" onClick={() => zoomBy(1 / 1.5)} />
@@ -65,7 +77,8 @@ export function Timeline({ onOpenLibrary }: { onOpenLibrary: () => void }) {
       }
       className="shrink-0"
     >
-      <div ref={scrollerRef} className="relative max-h-[52dvh] overflow-auto overscroll-contain">
+      {/* Bez wewnętrznego limitu wysokości – przewija się cała kolumna edytora, więc żadna ścieżka się nie chowa. */}
+      <div ref={scrollerRef} className="relative overflow-x-auto overflow-y-hidden">
         {comp.tracks.length === 0 ? (
           <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
             <div className="text-sm text-slate-300">Projekt jest pusty.</div>
@@ -79,8 +92,8 @@ export function Timeline({ onOpenLibrary }: { onOpenLibrary: () => void }) {
         ) : (
           <div className="relative" style={{ width: headerW + laneW }}>
             {/* Linijka */}
-            <div className="sticky top-0 z-30 flex border-b border-line/70 bg-panel/95 backdrop-blur" style={{ height: RULER_H }}>
-              {wide && <div className="sticky left-0 z-10 shrink-0 bg-panel/95" style={{ width: headerW }} />}
+            <div className="relative z-30 flex border-b border-line/70 bg-panel" style={{ height: RULER_H }}>
+              {wide && <div className="sticky left-0 z-10 shrink-0 bg-panel" style={{ width: headerW }} />}
               <div className="relative cursor-pointer" style={{ width: laneW }} onPointerDown={seekFromRuler} title="Kliknij, aby przewinąć">
                 {Array.from({ length: Math.floor(laneW / pps / step) + 1 }, (_, i) => i * step).map((t) => (
                   <div key={t} className="absolute top-0 h-full border-l border-line/80 pl-1" style={{ left: t * pps }}>
@@ -141,9 +154,12 @@ function TrackRow({ track, color, wide, viewW, headerW, laneW, laneH, pps, gridS
   })
 
   return (
-    <div className={`relative flex border-b border-line/50 ${wide ? 'flex-row' : 'flex-col'} ${selected ? 'bg-white/[0.025]' : ''}`}>
+    <div
+      data-track-id={track.id}
+      className={`relative flex scroll-my-4 border-b border-line/50 ${wide ? 'flex-row' : 'flex-col'} ${selected ? 'bg-white/[0.025]' : ''}`}
+    >
       <div
-        className="sticky left-0 z-40 shrink-0 border-r border-line/50 bg-panel/95 backdrop-blur"
+        className="sticky left-0 z-40 shrink-0 border-r border-line/50 bg-panel"
         style={{ width: wide ? headerW : viewW, height: wide ? laneH : undefined, boxShadow: selected ? `inset 3px 0 0 ${color}` : undefined }}
         onPointerDown={() => !selected && select(track.id, track.clips[0]?.id ?? null)}
       >
@@ -182,10 +198,25 @@ function TrackHeader({ track, color }: { track: Track; color: string }) {
   const removeTrack = useProjectStore((s) => s.removeTrack)
   const addClip = useProjectStore((s) => s.addClip)
   const [name, setName] = useState<string | null>(null)
+  const pan = track.pan ?? 0
+
+  const panBtn = (value: number, label: string, title: string) => (
+    <button
+      type="button"
+      title={title}
+      aria-pressed={pan === value}
+      onClick={() => updateTrack(track.id, { pan: value })}
+      className={`h-full min-w-8 px-1.5 font-mono text-[11px] transition-colors ${
+        pan === value ? 'bg-plasma/20 text-plasma' : 'text-muted hover:text-slate-100'
+      }`}
+    >
+      {label}
+    </button>
+  )
 
   return (
     <div className="flex h-full flex-col justify-center gap-1.5 px-2.5 py-2">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <span className="size-2.5 shrink-0 rounded-full" style={{ background: color, boxShadow: `0 0 10px ${color}` }} />
         <input
           aria-label="Nazwa ścieżki"
@@ -198,6 +229,12 @@ function TrackHeader({ track, color }: { track: Track; color: string }) {
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
           className="min-w-0 flex-1 truncate rounded bg-transparent px-1 text-sm text-slate-100 outline-none focus:bg-white/5"
         />
+        <Slider
+          label={`Głośność ścieżki ${Math.round(track.volume * 100)}%`}
+          value={track.volume}
+          onChange={(v) => updateTrack(track.id, { volume: v })}
+          className="w-16 shrink-0 sm:w-20"
+        />
         <IconButton
           size="sm"
           icon={track.muted ? 'mute' : 'volume'}
@@ -208,13 +245,17 @@ function TrackHeader({ track, color }: { track: Track; color: string }) {
         <IconButton size="sm" icon="plus" label="Dodaj segment" onClick={() => addClip(track.id)} />
         <IconButton size="sm" icon="trash" label="Usuń ścieżkę" onClick={() => removeTrack(track.id)} />
       </div>
-      <div className="flex items-center gap-2">
-        <FrequencyField mHz={track.frequencyMilliHz} onCommit={(mHz) => updateTrack(track.id, { frequencyMilliHz: mHz })} className="w-[7.5rem]" />
+      <div className="flex items-center gap-1.5">
+        <FrequencyField
+          mHz={track.frequencyMilliHz}
+          onCommit={(mHz) => updateTrack(track.id, { frequencyMilliHz: mHz })}
+          className="w-[7.75rem] shrink-0"
+        />
         <select
           aria-label="Kształt fali"
           value={track.waveform}
           onChange={(e) => updateTrack(track.id, { waveform: e.target.value as Waveform })}
-          className="field h-8 w-[5.5rem] text-xs outline-none"
+          className="field h-8 min-w-0 flex-1 text-xs outline-none"
         >
           {WAVEFORMS.map((w) => (
             <option key={w} value={w}>
@@ -222,16 +263,17 @@ function TrackHeader({ track, color }: { track: Track; color: string }) {
             </option>
           ))}
         </select>
-        <Slider
-          label={`Głośność ścieżki ${Math.round(track.volume * 100)}%`}
-          value={track.volume}
-          onChange={(v) => updateTrack(track.id, { volume: v })}
-          className="min-w-10 flex-1"
-        />
+        <div role="group" aria-label="Kanał stereo" className="flex h-8 shrink-0 overflow-hidden rounded-lg border border-line">
+          {panBtn(-1, 'L', 'Tylko lewy głośnik / słuchawka')}
+          {panBtn(0, 'L+P', 'Oba kanały')}
+          {panBtn(1, 'P', 'Tylko prawy głośnik / słuchawka')}
+        </div>
       </div>
     </div>
   )
 }
+
+const trackLabel = (n: number) => (n === 1 ? 'ścieżka' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'ścieżki' : 'ścieżek')
 
 interface DragState {
   mode: 'move' | 'resize'

@@ -1,17 +1,42 @@
 import { z } from 'zod'
-import { DEFAULT_LIBRARY } from '../data/defaultLibrary'
 import { parseComposition } from '../model/parse'
-import { LibraryFrequencySchema, type Composition, type LibraryFrequency } from '../model/schema'
+import {
+  LibraryFrequencySchema,
+  RemotePresetSchema,
+  type Composition,
+  type LibraryFrequency,
+  type RemotePreset,
+} from '../model/schema'
+
+/** Ostatnia udana odpowiedź API zapamiętana lokalnie (na wypadek pracy offline). */
+async function fetchWithCache<T>(url: string, schema: z.ZodType<T>, cacheKey: string): Promise<{ items: T; offline: boolean } | null> {
+  try {
+    const res = await fetch(url, { headers: { Accept: 'application/json' } })
+    if (!res.ok) throw new Error(String(res.status))
+    const items = schema.parse(await res.json())
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(items))
+    } catch {
+      /* brak miejsca / tryb prywatny */
+    }
+    return { items, offline: false }
+  } catch {
+    try {
+      const cached = localStorage.getItem(cacheKey)
+      if (cached) return { items: schema.parse(JSON.parse(cached)), offline: true }
+    } catch {
+      /* uszkodzony cache */
+    }
+    return null
+  }
+}
 
 export async function fetchLibrary(): Promise<{ items: LibraryFrequency[]; offline: boolean }> {
-  try {
-    const res = await fetch('/api/frequencies/', { headers: { Accept: 'application/json' } })
-    if (!res.ok) throw new Error(String(res.status))
-    const items = z.array(LibraryFrequencySchema).parse(await res.json())
-    return { items: items.length ? items : DEFAULT_LIBRARY, offline: false }
-  } catch {
-    return { items: DEFAULT_LIBRARY, offline: true }
-  }
+  return (await fetchWithCache('/api/frequencies/', z.array(LibraryFrequencySchema), 'heartzheart:library')) ?? { items: [], offline: true }
+}
+
+export async function fetchRemotePresets(): Promise<RemotePreset[]> {
+  return (await fetchWithCache('/api/presets/', z.array(RemotePresetSchema), 'heartzheart:presets'))?.items ?? []
 }
 
 export async function createShortLink(comp: Composition): Promise<string> {

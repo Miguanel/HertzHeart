@@ -97,23 +97,48 @@ export function makePreset(id: PresetId, duration: number, opts: PresetOptions =
   )
 }
 
-export function createClip(start: number, duration = 60): Clip {
+export function createClip(start: number, duration = 60, preset: PresetId = 'fadeInOut', options?: Partial<PresetOptions>): Clip {
   const d = Math.max(MIN_CLIP_S, duration)
-  return { id: newId(), start: round(start), duration: round(d), envelope: makePreset('fadeInOut', d) }
+  return {
+    id: newId(),
+    start: round(start),
+    duration: round(d),
+    envelope: makePreset(preset, d, { ...DEFAULT_PRESET_OPTIONS, ...options }),
+  }
 }
 
-export function createTrack(name: string, frequencyMilliHz: number, libraryRef?: string): Track {
+export interface TrackOptions {
+  libraryRef?: string
+  pan?: number
+  volume?: number
+  waveform?: Track['waveform']
+  clips?: Clip[]
+}
+
+export function createTrack(name: string, frequencyMilliHz: number, opts: TrackOptions = {}): Track {
   return {
     id: newId(),
     name,
     frequencyMilliHz,
-    ...(libraryRef ? { libraryRef } : {}),
-    waveform: 'sine',
-    volume: 0.8,
+    ...(opts.libraryRef ? { libraryRef: opts.libraryRef } : {}),
+    waveform: opts.waveform ?? 'sine',
+    volume: opts.volume ?? 0.8,
+    pan: opts.pan ?? 0,
     muted: false,
-    clips: [createClip(0)],
+    clips: opts.clips ?? [createClip(0)],
   }
 }
+
+/** Para ścieżek dla dudnienia binauralnego: lewa = nośna, prawa = nośna + dudnienie. */
+export function createBinauralPair(name: string, carrierMilliHz: number, beatMilliHz: number, duration = 300, libraryRef?: string): Track[] {
+  const clip = () => [createClip(0, duration, 'fadeInOut', { fade: Math.min(15, duration / 4), level: 0.7 })]
+  return [
+    createTrack(`${name} · L`, carrierMilliHz, { libraryRef, pan: -1, clips: clip() }),
+    createTrack(`${name} · P`, carrierMilliHz + beatMilliHz, { libraryRef, pan: 1, clips: clip() }),
+  ]
+}
+
+export const PAN_LABEL = (pan: number) => (pan <= -0.5 ? 'L' : pan >= 0.5 ? 'P' : 'L+P')
 
 export function createComposition(title = 'Nowy projekt'): Composition {
   const now = new Date().toISOString()

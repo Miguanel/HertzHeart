@@ -33,9 +33,9 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//, /^\/admin/, /^\/static\//],
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname.startsWith('/api/frequencies'),
+            urlPattern: ({ url }) => url.pathname.startsWith('/api/frequencies') || url.pathname.startsWith('/api/presets'),
             handler: 'NetworkFirst',
-            options: { cacheName: 'api-library', networkTimeoutSeconds: 4, expiration: { maxEntries: 4 } },
+            options: { cacheName: 'api-library', networkTimeoutSeconds: 4, expiration: { maxEntries: 8 } },
           },
           {
             urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',

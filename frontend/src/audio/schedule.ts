@@ -35,7 +35,12 @@ export function scheduleComposition(
 
       const osc = new OscillatorNode(ctx, { type: track.waveform, frequency: track.frequencyMilliHz / 1000 })
       const gain = new GainNode(ctx, { gain: 0 })
-      osc.connect(gain).connect(out)
+      const pan = track.pan ?? 0
+      if (pan === 0) {
+        osc.connect(gain).connect(out) // mono -> oba kanały z pełnym poziomem
+      } else {
+        osc.connect(gain).connect(new StereoPannerNode(ctx, { pan })).connect(out)
+      }
 
       const g = gain.gain
       g.setValueAtTime(0, at(begin)) // kotwica

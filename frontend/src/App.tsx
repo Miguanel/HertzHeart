@@ -10,10 +10,10 @@ import { Timeline } from './components/Timeline'
 import { TopBar } from './components/TopBar'
 import { TransportBar } from './components/TransportBar'
 import { Sheet } from './components/ui'
-import { DEFAULT_LIBRARY } from './data/defaultLibrary'
 import { getProject, lastProjectId, listProjects, requestPersistentStorage } from './db/db'
-import { createComposition, newId } from './model/envelope'
-import type { LibraryFrequency } from './model/schema'
+import { createComposition } from './model/envelope'
+import { asNewProject, parseComposition } from './model/parse'
+import type { Composition, LibraryFrequency } from './model/schema'
 import { clearShareFromLocation, decodeComposition, downloadBlob, readShareFromLocation, safeFilename } from './share/codec'
 import { startAutosave } from './store/autosave'
 import { useProjectStore } from './store/projectStore'
@@ -29,12 +29,13 @@ async function loadInitialProject(): Promise<string | null> {
     if (shared) {
       const comp = shared.kind === 'hash' ? await decodeComposition(shared.payload) : await fetchSharedProject(shared.slug)
       // Odbiorca dostaje własną kopię – nie nadpisze projektu o tym samym id.
-      openComposition({ ...comp, id: newId(), updatedAt: new Date().toISOString() })
+      openComposition(asNewProject(comp))
       return `Otwarto udostępniony projekt „${comp.title}”`
     }
     const id = lastProjectId()
     const record = (id && (await getProject(id))) || (await listProjects())[0]
-    openComposition(record ? record.data : createComposition())
+    // parseComposition uzupełnia pola dodane w nowszych wersjach (np. kanał stereo)
+    openComposition(record ? parseComposition(record.data) : createComposition())
     return null
   } catch (e) {
     openComposition(createComposition())
@@ -45,7 +46,8 @@ async function loadInitialProject(): Promise<string | null> {
 }
 
 export default function App() {
-  const [library, setLibrary] = useState<LibraryFrequency[]>(DEFAULT_LIBRARY)
+  const [library, setLibrary] = useState<LibraryFrequency[]>([])
+  const [libraryLoading, setLibraryLoading] = useState(true)
   const [offline, setOffline] = useState(false)
   const [view, setView] = useState<MobileView>('editor')
   const [sheet, setSheet] = useState<SheetId>(null)
@@ -63,6 +65,7 @@ export default function App() {
     void fetchLibrary().then((r) => {
       setLibrary(r.items)
       setOffline(r.offline)
+      setLibraryLoading(false)
     })
   }, [])
 
@@ -74,6 +77,12 @@ export default function App() {
   }, [showToast])
 
   const closeSheet = useCallback(() => setSheet(null), [])
+
+  const openPreset = (comp: Composition, name: string) => {
+    openComposition(comp)
+    setView('editor')
+    showToast(`Otwarto zestaw „${name}” jako nowy projekt`)
+  }
 
   const exportWav = async () => {
     const comp = useProjectStore.getState().composition
@@ -110,7 +119,13 @@ export default function App() {
 
       <main className="mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 gap-3 px-3 pb-3 sm:px-5">
         <aside className={`${view === 'library' ? 'flex' : 'hidden'} min-h-0 w-full shrink-0 flex-col lg:flex lg:w-[340px] xl:w-[380px]`}>
-          <LibraryPanel library={library} offline={offline} onAdded={() => setView('editor')} />
+          <LibraryPanel
+            library={library}
+            loading={libraryLoading}
+            offline={offline}
+            onAdded={() => setView('editor')}
+            onOpenPreset={openPreset}
+          />
         </aside>
         <section className={`${view === 'editor' ? 'flex' : 'hidden'} min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto lg:flex`}>
           <Timeline onOpenLibrary={() => setView('library')} />

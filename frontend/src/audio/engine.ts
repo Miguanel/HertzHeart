@@ -19,7 +19,7 @@ class AudioEngine {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
   private voice: Voice | null = null
-  private previewVoice: { osc: OscillatorNode; gain: GainNode; key: string } | null = null
+  private previewVoice: { osc: OscillatorNode; oscs: OscillatorNode[]; gain: GainNode; key: string } | null = null
   private from = 0
   private t0 = 0
   private duration = 0
@@ -113,22 +113,35 @@ class AudioEngine {
   }
 
   /** Krótki odsłuch pojedynczej częstotliwości z biblioteki. */
-  async togglePreview(key: string, frequencyMilliHz: number, waveform: Waveform = 'sine', seconds = 4) {
+  /** Krótki odsłuch; z `beatMilliHz` gra parę binauralną (lewy/prawy kanał). */
+  async togglePreview(key: string, frequencyMilliHz: number, beatMilliHz?: number | null, waveform: Waveform = 'sine', seconds = 6) {
     const wasSame = this.previewVoice?.key === key
     this.stopPreview()
     if (wasSame) return
     await this.unlock()
     const ctx = this.ctx!
     const now = ctx.currentTime
-    const osc = new OscillatorNode(ctx, { type: waveform, frequency: frequencyMilliHz / 1000 })
     const gain = new GainNode(ctx, { gain: 0 })
-    osc.connect(gain).connect(this.master!)
+    gain.connect(this.master!)
+    const voices = beatMilliHz
+      ? [
+          { f: frequencyMilliHz, pan: -1 },
+          { f: frequencyMilliHz + beatMilliHz, pan: 1 },
+        ]
+      : [{ f: frequencyMilliHz, pan: 0 }]
+    const oscs = voices.map(({ f, pan }) => {
+      const osc = new OscillatorNode(ctx, { type: waveform, frequency: f / 1000 })
+      if (pan) osc.connect(new StereoPannerNode(ctx, { pan })).connect(gain)
+      else osc.connect(gain)
+      osc.start(now)
+      osc.stop(now + seconds + 0.05)
+      return osc
+    })
     gain.gain.setValueAtTime(0, now)
     gain.gain.linearRampToValueAtTime(0.6, now + 0.3)
     gain.gain.setValueAtTime(0.6, now + seconds - 0.5)
     gain.gain.linearRampToValueAtTime(0, now + seconds)
-    osc.start(now)
-    osc.stop(now + seconds + 0.05)
+    const osc = oscs[0]
     osc.onended = () => {
       if (this.previewVoice?.osc === osc) {
         this.previewVoice = null
@@ -136,7 +149,7 @@ class AudioEngine {
         this.emit()
       }
     }
-    this.previewVoice = { osc, gain, key }
+    this.previewVoice = { osc, oscs, gain, key }
     this.previewKey = key
     this.emit()
   }
@@ -147,7 +160,7 @@ class AudioEngine {
     const now = this.ctx.currentTime
     pv.gain.gain.cancelScheduledValues(now)
     pv.gain.gain.setTargetAtTime(0, now, 0.02)
-    pv.osc.stop(now + 0.1)
+    pv.oscs.forEach((o) => o.stop(now + 0.1))
     this.previewVoice = null
     this.previewKey = null
     this.emit()

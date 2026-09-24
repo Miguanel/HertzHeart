@@ -1,5 +1,5 @@
 import { CompositionSchema, type Composition } from './schema'
-import { normalizeEnvelope } from './envelope'
+import { newId, normalizeEnvelope } from './envelope'
 
 /** Waliduje dane z niezaufanego źródła (link, plik, API) i doprowadza je do spójnej postaci. */
 export function parseComposition(raw: unknown): Composition {
@@ -18,4 +18,10 @@ export function parseComposition(raw: unknown): Composition {
         .map((clip) => ({ ...clip, envelope: normalizeEnvelope(clip.envelope, clip.duration) })),
     })),
   }
+}
+
+/** Świeża kopia projektu (nowe id i daty) – do otwierania zestawów, linków i importów. */
+export function asNewProject(comp: Composition): Composition {
+  const now = new Date().toISOString()
+  return { ...comp, id: newId(), createdAt: now, updatedAt: now }
 }

@@ -30,4 +30,4 @@ USER app
 
 EXPOSE 10000
 # Migracje przy starcie; konto administratora tworzone, jeśli ustawiono DJANGO_SUPERUSER_* (Render nie ma powłoki w planie free).
-CMD ["sh", "-c", "python manage.py migrate --noinput && if [ -n \"$DJANGO_SUPERUSER_PASSWORD\" ]; then python manage.py createsuperuser --noinput || true; fi && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --timeout 60 --access-logfile -"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py sync_library && if [ -n \"$DJANGO_SUPERUSER_PASSWORD\" ]; then python manage.py createsuperuser --noinput || true; fi && exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT} --workers 2 --timeout 60 --access-logfile -"]

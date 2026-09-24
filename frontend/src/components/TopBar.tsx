@@ -57,11 +57,11 @@ export function TopBar({ onProjects, onShare }: { onProjects: () => void; onShar
       </div>
       <div className="flex items-center gap-1 sm:gap-1.5">
         <IconButton icon="undo" label="Cofnij (Ctrl+Z)" onClick={undo} disabled={!canUndo} />
-        <IconButton icon="redo" label="Ponów (Ctrl+Shift+Z)" onClick={redo} disabled={!canRedo} className="hidden sm:inline-flex" />
+        <IconButton icon="redo" label="Ponów (Ctrl+Shift+Z)" onClick={redo} disabled={!canRedo} className="max-sm:hidden" />
         <Button variant="primary" icon="share" onClick={onShare} aria-label="Udostępnij i eksportuj">
           <span className="hidden sm:inline">Udostępnij</span>
         </Button>
-        <Button icon="folder" onClick={onProjects} className="hidden lg:inline-flex">
+        <Button icon="folder" onClick={onProjects} className="max-lg:hidden">
           Projekty
         </Button>
       </div>

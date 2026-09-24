@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { deleteProject, listProjects, saveProject, type ProjectRecord } from '../db/db'
 import { createComposition, newId } from '../model/envelope'
-import { parseComposition } from '../model/parse'
+import { asNewProject, parseComposition } from '../model/parse'
 import { compositionToFile, downloadBlob } from '../share/codec'
 import { useSaveStatus } from '../store/autosave'
 import { useProjectStore } from '../store/projectStore'
@@ -24,8 +24,12 @@ export function ProjectsPanel({ onOpened }: { onOpened: () => void }) {
   }, [refresh, saveStatus])
 
   const open = (record: ProjectRecord) => {
-    openComposition(record.data)
-    onOpened()
+    try {
+      openComposition(parseComposition(record.data))
+      onOpened()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Nie udało się otworzyć projektu.')
+    }
   }
 
   const duplicate = async (record: ProjectRecord) => {
@@ -45,7 +49,7 @@ export function ProjectsPanel({ onOpened }: { onOpened: () => void }) {
     setError(null)
     try {
       const comp = parseComposition(JSON.parse(await file.text()))
-      openComposition({ ...comp, id: newId(), updatedAt: new Date().toISOString() })
+      openComposition(asNewProject(comp))
       onOpened()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Nie udało się wczytać pliku.')
