@@ -5,6 +5,7 @@ import { createBinauralPair, createTrack } from '../model/envelope'
 import { formatHz, parseHz } from '../model/frequency'
 import type { Composition, LibraryFrequency } from '../model/schema'
 import { useProjectStore } from '../store/projectStore'
+import { useUi, type LibraryTab } from '../store/uiStore'
 import { Badge, InfoContent, InfoHeader } from './InfoContent'
 import { PresetsList } from './PresetsList'
 import { Button, IconButton, Panel, Sheet } from './ui'
@@ -24,7 +25,7 @@ function CustomFrequency({ onAdd }: { onAdd: (name: string, mHz: number) => void
   }
 
   return (
-    <form onSubmit={submit} className="grid grid-cols-[1fr_auto] gap-2">
+    <form onSubmit={submit} data-tour="custom-frequency" className="grid grid-cols-[1fr_auto] gap-2">
       <label className={`field flex h-10 items-center gap-2 ${invalid ? 'border-rose-500/70' : ''}`}>
         <span className="sr-only">Własna częstotliwość</span>
         <input
@@ -52,8 +53,6 @@ function CustomFrequency({ onAdd }: { onAdd: (name: string, mHz: number) => void
   )
 }
 
-type Tab = 'frequencies' | 'presets'
-
 interface Props {
   library: LibraryFrequency[]
   offline: boolean
@@ -65,7 +64,8 @@ interface Props {
 export function LibraryPanel({ library, offline, loading, onAdded, onOpenPreset }: Props) {
   const addTracks = useProjectStore((s) => s.addTracks)
   const previewKey = usePreviewKey()
-  const [tab, setTab] = useState<Tab>('frequencies')
+  const tab = useUi((s) => s.libraryTab)
+  const setTab = useUi((s) => s.setLibraryTab)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string | null>(null)
   const [info, setInfo] = useState<LibraryFrequency | null>(null)
@@ -100,7 +100,7 @@ export function LibraryPanel({ library, offline, loading, onAdded, onOpenPreset 
       active ? 'border-neon/60 bg-neon/15 text-neon' : 'border-line text-muted hover:text-slate-100'
     }`
 
-  const tabBtn = (id: Tab, label: string) => (
+  const tabBtn = (id: LibraryTab, label: string) => (
     <button
       type="button"
       role="tab"
@@ -117,7 +117,7 @@ export function LibraryPanel({ library, offline, loading, onAdded, onOpenPreset 
   return (
     <Panel
       title={
-        <div role="tablist" className="flex w-60 gap-1 rounded-lg border border-line/70 p-0.5">
+        <div role="tablist" data-tour="library-tabs" className="flex w-60 gap-1 rounded-lg border border-line/70 p-0.5">
           {tabBtn('frequencies', 'Częstotliwości')}
           {tabBtn('presets', 'Zestawy')}
         </div>
@@ -125,6 +125,7 @@ export function LibraryPanel({ library, offline, loading, onAdded, onOpenPreset 
       actions={offline && <span className="rounded bg-warn/15 px-2 py-0.5 text-[10px] text-warn">offline</span>}
       className="h-full"
       bodyClassName="flex flex-col"
+      tour="library"
     >
       {tab === 'presets' ? (
         <div className="min-h-0 flex-1 overflow-y-auto">
@@ -134,6 +135,7 @@ export function LibraryPanel({ library, offline, loading, onAdded, onOpenPreset 
         <>
           <div className="space-y-3 border-b border-line/60 p-3">
             <CustomFrequency onAdd={addCustom} />
+            <div data-tour="library-filters" className="space-y-3">
             <input
               type="search"
               value={query}
@@ -152,15 +154,17 @@ export function LibraryPanel({ library, offline, loading, onAdded, onOpenPreset 
                 </button>
               ))}
             </div>
+            </div>
           </div>
 
           <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2">
-            {filtered.map((f) => {
+            {filtered.map((f, index) => {
               const key = `lib:${f.id}`
               const playing = previewKey === key
               return (
                 <li
                   key={f.id}
+                  data-tour={index === 0 ? 'library-item' : undefined}
                   className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 transition-colors ${
                     playing ? 'border-neon/60 bg-neon/10' : 'border-line/60 bg-white/[0.02] hover:border-neon/30'
                   }`}

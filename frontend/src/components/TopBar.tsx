@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from 'zustand'
 import { useSaveStatus } from '../store/autosave'
 import { redo, undo, useProjectStore } from '../store/projectStore'
+import { useTour } from '../tour/tourStore'
 import { Button, IconButton } from './ui'
 
 function Logo() {
@@ -32,6 +33,7 @@ export function TopBar({ onProjects, onShare }: { onProjects: () => void; onShar
   const canUndo = useStore(useProjectStore.temporal, (s) => s.pastStates.length > 0)
   const canRedo = useStore(useProjectStore.temporal, (s) => s.futureStates.length > 0)
   const status = useSaveStatus((s) => s.status)
+  const offerTour = useTour((s) => s.offer)
   const [draft, setDraft] = useState<string | null>(null)
 
   const commit = () => {
@@ -44,6 +46,7 @@ export function TopBar({ onProjects, onShare }: { onProjects: () => void; onShar
       <Logo />
       <div className="flex min-w-0 flex-1 flex-col">
         <input
+          data-tour="title"
           aria-label="Nazwa projektu"
           value={draft ?? title}
           onChange={(e) => setDraft(e.target.value)}
@@ -56,12 +59,13 @@ export function TopBar({ onProjects, onShare }: { onProjects: () => void; onShar
         </span>
       </div>
       <div className="flex items-center gap-1 sm:gap-1.5">
-        <IconButton icon="undo" label="Cofnij (Ctrl+Z)" onClick={undo} disabled={!canUndo} />
+        <IconButton icon="help" label="Poradnik" onClick={offerTour} data-tour="help-button" />
+        <IconButton icon="undo" label="Cofnij (Ctrl+Z)" onClick={undo} disabled={!canUndo} data-tour="undo" />
         <IconButton icon="redo" label="Ponów (Ctrl+Shift+Z)" onClick={redo} disabled={!canRedo} className="max-sm:hidden" />
-        <Button variant="primary" icon="share" onClick={onShare} aria-label="Udostępnij i eksportuj">
+        <Button variant="primary" icon="share" onClick={onShare} aria-label="Udostępnij i eksportuj" data-tour="share-button">
           <span className="hidden sm:inline">Udostępnij</span>
         </Button>
-        <Button icon="folder" onClick={onProjects} className="max-lg:hidden">
+        <Button icon="folder" onClick={onProjects} className="max-lg:hidden" data-tour="projects-button">
           Projekty
         </Button>
       </div>

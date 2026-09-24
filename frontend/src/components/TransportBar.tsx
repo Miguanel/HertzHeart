@@ -26,7 +26,7 @@ export function TransportBar() {
   const duration = compositionDuration(comp)
 
   return (
-    <div className="glass relative flex items-center gap-2 px-2.5 py-2 sm:gap-3 sm:px-4">
+    <div data-tour="transport" className="glass relative flex items-center gap-2 px-2.5 py-2 sm:gap-3 sm:px-4">
       <IconButton
         size="lg"
         variant="primary"

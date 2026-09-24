@@ -68,12 +68,13 @@ export function Timeline({ onOpenLibrary }: { onOpenLibrary: () => void }) {
   return (
     <Panel
       title={`Oś czasu · ${trackCount} ${trackLabel(trackCount)}`}
+      tour="timeline"
       actions={
-        <>
+        <div data-tour="timeline-zoom" className="flex items-center gap-1">
           <IconButton size="sm" icon="zoomOut" label="Oddal" onClick={() => zoomBy(1 / 1.5)} />
           <IconButton size="sm" icon="fit" label="Dopasuj" onClick={() => setZoom(null)} active={zoom === null} />
           <IconButton size="sm" icon="zoomIn" label="Przybliż" onClick={() => zoomBy(1.5)} />
-        </>
+        </div>
       }
       className="shrink-0"
     >
@@ -216,7 +217,7 @@ function TrackHeader({ track, color }: { track: Track; color: string }) {
 
   return (
     <div className="flex h-full flex-col justify-center gap-1.5 px-2.5 py-2">
-      <div className="flex items-center gap-1.5">
+      <div data-tour="track-top" className="flex items-center gap-1.5">
         <span className="size-2.5 shrink-0 rounded-full" style={{ background: color, boxShadow: `0 0 10px ${color}` }} />
         <input
           aria-label="Nazwa ścieżki"
@@ -245,7 +246,7 @@ function TrackHeader({ track, color }: { track: Track; color: string }) {
         <IconButton size="sm" icon="plus" label="Dodaj segment" onClick={() => addClip(track.id)} />
         <IconButton size="sm" icon="trash" label="Usuń ścieżkę" onClick={() => removeTrack(track.id)} />
       </div>
-      <div className="flex items-center gap-1.5">
+      <div data-tour="track-bottom" className="flex items-center gap-1.5">
         <FrequencyField
           mHz={track.frequencyMilliHz}
           onCommit={(mHz) => updateTrack(track.id, { frequencyMilliHz: mHz })}
@@ -320,6 +321,7 @@ function ClipBlock({ clip, track, color, pps, selected }: { clip: Clip; track: T
     <div
       role="button"
       tabIndex={0}
+      data-tour="clip"
       aria-label={`Segment ${formatTime(clip.start)} – ${formatTime(clip.start + clip.duration)}`}
       aria-pressed={selected}
       className="absolute bottom-1.5 top-1.5 cursor-grab overflow-hidden rounded-lg border outline-none active:cursor-grabbing"

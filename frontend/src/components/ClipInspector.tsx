@@ -17,7 +17,7 @@ export function ClipInspector() {
   const found = findClip(comp, selectedClipId)
   if (!found) {
     return (
-      <Panel title="Diagram segmentu" className="shrink-0">
+      <Panel title="Diagram segmentu" className="shrink-0" tour="inspector">
         <p className="p-6 text-center text-sm text-muted">Zaznacz segment na osi czasu, aby edytować jego diagram głośności.</p>
       </Panel>
     )
@@ -29,6 +29,7 @@ export function ClipInspector() {
   return (
     <Panel
       className="shrink-0"
+      tour="inspector"
       title={
         <span>
           Diagram · <span style={{ color }}>{track.name}</span>{' '}
@@ -38,7 +39,7 @@ export function ClipInspector() {
       actions={<IconButton size="sm" icon="trash" label="Usuń segment" variant="danger" onClick={() => removeClip(clip.id)} />}
       bodyClassName="space-y-3 p-3 sm:p-4"
     >
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+      <div data-tour="inspector-timing" className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         <NumberField label="Start [s]" value={clip.start} decimals={1} min={0} onCommit={(v) => setClipTiming(clip.id, v, clip.duration)} />
         <NumberField
           label="Długość [s]"
@@ -64,7 +65,7 @@ export function ClipInspector() {
         />
       </div>
 
-      <div className="no-scrollbar -mx-3 flex gap-1.5 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:px-0">
+      <div data-tour="inspector-presets" className="no-scrollbar -mx-3 flex gap-1.5 overflow-x-auto px-3 sm:mx-0 sm:flex-wrap sm:px-0">
         {PRESETS.map((p) => (
           <Button key={p.id} size="sm" onClick={() => applyPreset(clip.id, p.id, opts)}>
             {p.label}

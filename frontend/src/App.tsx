@@ -18,9 +18,9 @@ import { clearShareFromLocation, decodeComposition, downloadBlob, readShareFromL
 import { startAutosave } from './store/autosave'
 import { useProjectStore } from './store/projectStore'
 import { openComposition, usePlaybackController } from './store/session'
-
-type MobileView = 'library' | 'editor'
-type SheetId = 'projects' | 'share' | null
+import { useUi, type MobileView } from './store/uiStore'
+import { Tour } from './tour/Tour'
+import { useTour } from './tour/tourStore'
 
 /** Otwiera projekt startowy: udostępniony (link), ostatnio używany albo nowy. */
 async function loadInitialProject(): Promise<string | null> {
@@ -49,8 +49,7 @@ export default function App() {
   const [library, setLibrary] = useState<LibraryFrequency[]>([])
   const [libraryLoading, setLibraryLoading] = useState(true)
   const [offline, setOffline] = useState(false)
-  const [view, setView] = useState<MobileView>('editor')
-  const [sheet, setSheet] = useState<SheetId>(null)
+  const { view, setView, sheet, setSheet } = useUi()
   const [toast, setToast] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
 
@@ -72,11 +71,14 @@ export default function App() {
   useEffect(() => {
     const stopAutosave = startAutosave()
     void requestPersistentStorage()
-    void loadInitialProject().then((msg) => msg && showToast(msg))
+    void loadInitialProject().then((msg) => {
+      if (msg) showToast(msg)
+      useTour.getState().offerIfFirstVisit()
+    })
     return stopAutosave
   }, [showToast])
 
-  const closeSheet = useCallback(() => setSheet(null), [])
+  const closeSheet = useCallback(() => setSheet(null), [setSheet])
 
   const openPreset = (comp: Composition, name: string) => {
     openComposition(comp)
@@ -135,14 +137,14 @@ export default function App() {
 
       <footer className="mx-auto w-full max-w-[1920px] space-y-2 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-5 lg:pb-4">
         <TransportBar />
-        <nav className="glass grid grid-cols-3 gap-1 p-1 lg:hidden" aria-label="Nawigacja">
+        <nav data-tour="mobile-nav" className="glass grid grid-cols-3 gap-1 p-1 lg:hidden" aria-label="Nawigacja">
           {tab('library', 'library', 'Biblioteka')}
           {tab('editor', 'wave', 'Edytor')}
           {tab('projects', 'folder', 'Projekty')}
         </nav>
       </footer>
 
-      <Sheet open={sheet === 'projects'} title="Projekty" onClose={closeSheet}>
+      <Sheet open={sheet === 'projects'} title="Projekty" onClose={closeSheet} tour="sheet-projects">
         <ProjectsPanel
           onOpened={() => {
             setSheet(null)
@@ -150,9 +152,11 @@ export default function App() {
           }}
         />
       </Sheet>
-      <Sheet open={sheet === 'share'} title="Udostępnij i eksportuj" onClose={closeSheet}>
+      <Sheet open={sheet === 'share'} title="Udostępnij i eksportuj" onClose={closeSheet} tour="sheet-share">
         <SharePanel onExportWav={() => void exportWav()} exporting={exporting} />
       </Sheet>
+
+      <Tour />
 
       {toast && (
         <div role="status" className="glass-solid fixed left-1/2 top-4 z-[60] max-w-[90vw] -translate-x-1/2 px-4 py-2.5 text-sm text-slate-100">

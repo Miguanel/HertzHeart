@@ -105,7 +105,7 @@ export function EnvelopeEditor({ clip, color }: { clip: Clip; color: string }) {
   }
 
   return (
-    <div className="space-y-2.5">
+    <div data-tour="envelope" className="space-y-2.5">
       <div ref={wrapRef} className="overflow-hidden rounded-xl border border-line/70 bg-void/60">
         <svg
           ref={svgRef}

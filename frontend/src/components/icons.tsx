@@ -57,6 +57,12 @@ const PATHS = {
       <path d="M12 11v5.5M12 7.6v.2" />
     </>
   ),
+  help: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.8M12 17v.2" />
+    </>
+  ),
   file: <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5" />,
 } satisfies Record<string, ReactNode>
 

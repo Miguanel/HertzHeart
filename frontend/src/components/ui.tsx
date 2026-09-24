@@ -1,4 +1,5 @@
 import { useEffect, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { formatHz, parseHz } from '../model/frequency'
 import { Icon, type IconName } from './icons'
 
@@ -58,15 +59,18 @@ export function Panel({
   children,
   className = '',
   bodyClassName = '',
+  tour,
 }: {
   title?: ReactNode
   actions?: ReactNode
   children: ReactNode
   className?: string
   bodyClassName?: string
+  /** Punkt zaczepienia dla poradnika (data-tour). */
+  tour?: string
 }) {
   return (
-    <section className={`glass flex min-h-0 flex-col ${className}`}>
+    <section data-tour={tour} className={`glass flex min-h-0 flex-col ${className}`}>
       {(title || actions) && (
         <header className="flex min-h-12 items-center justify-between gap-2 border-b border-line/70 px-4 py-1.5">
           <h2 className="truncate font-display text-[11px] uppercase tracking-[0.22em] text-muted">{title}</h2>
@@ -78,7 +82,23 @@ export function Panel({
   )
 }
 
-export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+/**
+ * Panel boczny / pełnoekranowy. Renderowany przez portal w <body> – inaczej `backdrop-filter`
+ * panelu-rodzica zamyka `position: fixed` w jego obrębie (okno byłoby ucięte).
+ */
+export function Sheet({
+  open,
+  onClose,
+  title,
+  children,
+  tour,
+}: {
+  open: boolean
+  onClose: () => void
+  title: string
+  children: ReactNode
+  tour?: string
+}) {
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -87,17 +107,21 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   }, [open, onClose])
 
   if (!open) return null
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" aria-label="Zamknij" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="glass-solid animate-slide-in relative flex h-full w-full flex-col pb-[env(safe-area-inset-bottom)] sm:max-w-md sm:rounded-l-2xl">
+      <div
+        data-tour={tour}
+        className="glass-solid animate-slide-in relative flex h-full w-full flex-col pb-[env(safe-area-inset-bottom)] sm:max-w-md sm:rounded-l-2xl"
+      >
         <header className="flex items-center justify-between border-b border-line/70 px-4 pb-3 pt-[max(env(safe-area-inset-top),0.75rem)]">
           <h2 className="font-display text-sm uppercase tracking-[0.22em] text-neon">{title}</h2>
           <IconButton icon="close" label="Zamknij" onClick={onClose} />
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
