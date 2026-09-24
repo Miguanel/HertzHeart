@@ -2,5 +2,6 @@ from django.apps import AppConfig
 
 
 class FrequenciesConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'frequencies'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "frequencies"
+    verbose_name = "Biblioteka częstotliwości"
