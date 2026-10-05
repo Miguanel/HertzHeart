@@ -2,7 +2,8 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { engine } from '../audio/engine'
 import { usePreviewKey } from '../hooks/usePlayback'
 import { createBinauralPair, createTrack } from '../model/envelope'
-import { formatHz, parseHz } from '../model/frequency'
+import { decimalsLabel, formatHz, parseHz } from '../model/frequency'
+import { useSettings } from '../store/settings'
 import type { Composition, LibraryFrequency } from '../model/schema'
 import { useProjectStore } from '../store/projectStore'
 import { useUi, type LibraryTab } from '../store/uiStore'
@@ -11,15 +12,16 @@ import { PresetsList } from './PresetsList'
 import { Button, IconButton, Panel, Sheet } from './ui'
 
 function CustomFrequency({ onAdd }: { onAdd: (name: string, mHz: number) => void }) {
+  const decimals = useSettings((s) => s.decimals)
   const [text, setText] = useState('')
   const [name, setName] = useState('')
-  const mHz = parseHz(text)
+  const mHz = parseHz(text, { decimals })
   const invalid = text.trim() !== '' && mHz === null
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
     if (mHz === null) return
-    onAdd(name.trim() || `${formatHz(mHz)} Hz`, mHz)
+    onAdd(name.trim() || `${formatHz(mHz, decimals)} Hz`, mHz)
     setText('')
     setName('')
   }
@@ -48,7 +50,7 @@ function CustomFrequency({ onAdd }: { onAdd: (name: string, mHz: number) => void
           className="field col-span-2 h-9 text-sm outline-none placeholder:text-muted/70"
         />
       )}
-      {invalid && <p className="col-span-2 text-xs text-rose-300">Zakres 1–20 000 Hz, maks. 3 miejsca po przecinku.</p>}
+      {invalid && <p className="col-span-2 text-xs text-rose-300">Zakres 1–20 000 Hz, {decimalsLabel(decimals)} (zmienisz w Ustawieniach).</p>}
     </form>
   )
 }
@@ -63,6 +65,7 @@ interface Props {
 
 export function LibraryPanel({ library, offline, loading, onAdded, onOpenPreset }: Props) {
   const addTracks = useProjectStore((s) => s.addTracks)
+  const decimals = useSettings((s) => s.decimals)
   const previewKey = usePreviewKey()
   const tab = useUi((s) => s.libraryTab)
   const setTab = useUi((s) => s.setLibraryTab)
@@ -171,10 +174,10 @@ export function LibraryPanel({ library, offline, loading, onAdded, onOpenPreset 
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-1.5">
-                      <span className="font-mono text-[15px] tabular-nums text-neon">{formatHz(f.frequencyMilliHz)}</span>
+                      <span className="font-mono text-[15px] tabular-nums text-neon">{formatHz(f.frequencyMilliHz, decimals)}</span>
                       <span className="text-[10px] text-muted">Hz</span>
                       {f.binauralBeatMilliHz && (
-                        <span className="font-mono text-[11px] text-plasma">+{formatHz(f.binauralBeatMilliHz)} · L/P</span>
+                        <span className="font-mono text-[11px] text-plasma">+{formatHz(f.binauralBeatMilliHz, decimals)} · L/P</span>
                       )}
                     </div>
                     <div className="truncate text-sm text-slate-200">{f.name}</div>
@@ -208,13 +211,13 @@ export function LibraryPanel({ library, offline, loading, onAdded, onOpenPreset 
               title={info.name}
               subtitle={
                 info.binauralBeatMilliHz
-                  ? `L ${formatHz(info.frequencyMilliHz)} Hz · P ${formatHz(info.frequencyMilliHz + info.binauralBeatMilliHz)} Hz`
-                  : `${formatHz(info.frequencyMilliHz)} Hz`
+                  ? `L ${formatHz(info.frequencyMilliHz, decimals)} Hz · P ${formatHz(info.frequencyMilliHz + info.binauralBeatMilliHz, decimals)} Hz`
+                  : `${formatHz(info.frequencyMilliHz, decimals)} Hz`
               }
               badges={
                 <>
                   <Badge>{info.category}</Badge>
-                  {info.binauralBeatMilliHz && <Badge tone="warn">🎧 dudnienie {formatHz(info.binauralBeatMilliHz)} Hz</Badge>}
+                  {info.binauralBeatMilliHz && <Badge tone="warn">🎧 dudnienie {formatHz(info.binauralBeatMilliHz, decimals)} Hz</Badge>}
                 </>
               }
             />

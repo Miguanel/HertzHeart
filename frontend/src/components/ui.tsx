@@ -1,6 +1,7 @@
 import { useEffect, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { formatHz, parseHz } from '../model/frequency'
+import { decimalsLabel, formatHz, parseHz } from '../model/frequency'
+import { useSettings } from '../store/settings'
 import { Icon, type IconName } from './icons'
 
 type Variant = 'primary' | 'outline' | 'ghost' | 'danger'
@@ -166,27 +167,47 @@ export function NumberField({ value, onCommit, label, min = -Infinity, max = Inf
   )
 }
 
-/** Częstotliwość z dokładnością 0,001 Hz. */
-export function FrequencyField({ mHz, onCommit, className = '' }: { mHz: number; onCommit: (mHz: number) => void; className?: string }) {
+/** Częstotliwość z dokładnością ustawioną w ustawieniach (0–7 miejsc po przecinku). */
+export function FrequencyField({
+  mHz,
+  onCommit,
+  className = '',
+  min,
+  max,
+  label = 'Częstotliwość w Hz',
+  size = 'sm',
+}: {
+  mHz: number
+  onCommit: (mHz: number) => void
+  className?: string
+  min?: number
+  max?: number
+  label?: string
+  size?: 'sm' | 'md'
+}) {
+  const decimals = useSettings((s) => s.decimals)
   const [draft, setDraft] = useState<string | null>(null)
-  const parsed = draft === null ? mHz : parseHz(draft)
+  const parsed = draft === null ? mHz : parseHz(draft, { decimals, min, max })
   const commit = () => {
     if (draft !== null && parsed !== null) onCommit(parsed)
     setDraft(null)
   }
   return (
-    <span className={`field flex h-8 items-center gap-1 ${parsed === null ? 'border-rose-500/70' : ''} ${className}`}>
+    <span
+      title={parsed === null ? `Nieprawidłowa wartość (${decimalsLabel(decimals)})` : undefined}
+      className={`field flex items-center gap-1 ${size === 'md' ? 'h-10' : 'h-8'} ${parsed === null ? 'border-rose-500/70' : ''} ${className}`}
+    >
       <input
-        aria-label="Częstotliwość w Hz"
+        aria-label={label}
         inputMode="decimal"
-        value={draft ?? formatHz(mHz)}
+        value={draft ?? formatHz(mHz, decimals)}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === 'Enter') e.currentTarget.blur()
           if (e.key === 'Escape') setDraft(null)
         }}
-        className="w-full min-w-0 bg-transparent font-mono text-sm tabular-nums text-neon outline-none"
+        className={`w-full min-w-0 bg-transparent font-mono tabular-nums text-neon outline-none ${size === 'md' ? 'text-base' : 'text-sm'}`}
       />
       <span className="text-[10px] text-muted">Hz</span>
     </span>

@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const WAVEFORMS = ['sine', 'triangle', 'square', 'sawtooth'] as const
 export const CURVES = ['linear', 'hold'] as const
 
-/** 1.000 Hz – 20 000.000 Hz, przechowywane jako liczba całkowita mHz. */
+/** 1 Hz – 20 000 Hz, przechowywane w mHz (z dokładnością do 0,0001 mHz = 0,0000001 Hz). */
 export const MIN_FREQ_MHZ = 1_000
 export const MAX_FREQ_MHZ = 20_000_000
 /** Maksymalna długość kompozycji: 12 h. */
@@ -32,7 +32,8 @@ export const ClipSchema = z.object({
 export const TrackSchema = z.object({
   id,
   name: z.string().max(120),
-  frequencyMilliHz: z.number().int().min(MIN_FREQ_MHZ).max(MAX_FREQ_MHZ),
+  /** mHz; ułamek mHz dozwolony (rozdzielczość do 0,0000001 Hz). */
+  frequencyMilliHz: z.number().min(MIN_FREQ_MHZ).max(MAX_FREQ_MHZ),
   libraryRef: z.string().max(64).optional(),
   waveform: z.enum(WAVEFORMS),
   volume: z.number().min(0).max(1),

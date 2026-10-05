@@ -1,6 +1,7 @@
 import type { Clip, Composition, EnvelopePoint, Track } from './schema'
 import { MIN_CLIP_S } from './schema'
 import { clamp, round } from './time'
+import { quantizeMilliHz } from './frequency'
 
 /** Losowe id; działa także poza „secure context” (np. test na telefonie przez IP w sieci LAN). */
 export function newId(): string {
@@ -134,7 +135,7 @@ export function createBinauralPair(name: string, carrierMilliHz: number, beatMil
   const clip = () => [createClip(0, duration, 'fadeInOut', { fade: Math.min(15, duration / 4), level: 0.7 })]
   return [
     createTrack(`${name} · L`, carrierMilliHz, { libraryRef, pan: -1, clips: clip() }),
-    createTrack(`${name} · P`, carrierMilliHz + beatMilliHz, { libraryRef, pan: 1, clips: clip() }),
+    createTrack(`${name} · P`, quantizeMilliHz(carrierMilliHz + beatMilliHz), { libraryRef, pan: 1, clips: clip() }),
   ]
 }
 

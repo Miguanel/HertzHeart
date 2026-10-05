@@ -6,7 +6,9 @@ import { WAVEFORMS, type Clip, type Track, type Waveform } from '../model/schema
 import { WAVEFORM_LABELS } from '../model/frequency'
 import { clamp, formatTime, snap } from '../model/time'
 import { useProjectStore } from '../store/projectStore'
+import { useSettings } from '../store/settings'
 import { envelopeArea, envelopeLine, niceStep } from './envelopePath'
+import { BrainBadge } from './Brainwaves'
 import { Button, FrequencyField, IconButton, Panel, Slider } from './ui'
 
 const HEADER_W = 336
@@ -199,6 +201,7 @@ function TrackHeader({ track, color }: { track: Track; color: string }) {
   const removeTrack = useProjectStore((s) => s.removeTrack)
   const addClip = useProjectStore((s) => s.addClip)
   const [name, setName] = useState<string | null>(null)
+  const decimals = useSettings((s) => s.decimals)
   const pan = track.pan ?? 0
 
   const panBtn = (value: number, label: string, title: string) => (
@@ -230,6 +233,7 @@ function TrackHeader({ track, color }: { track: Track; color: string }) {
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
           className="min-w-0 flex-1 truncate rounded bg-transparent px-1 text-sm text-slate-100 outline-none focus:bg-white/5"
         />
+        <BrainBadge hz={track.frequencyMilliHz / 1000} source={`Ścieżka „${track.name}”`} />
         <Slider
           label={`Głośność ścieżki ${Math.round(track.volume * 100)}%`}
           value={track.volume}
@@ -250,7 +254,7 @@ function TrackHeader({ track, color }: { track: Track; color: string }) {
         <FrequencyField
           mHz={track.frequencyMilliHz}
           onCommit={(mHz) => updateTrack(track.id, { frequencyMilliHz: mHz })}
-          className="w-[7.75rem] shrink-0"
+          className={`${decimals > 4 ? 'w-[9.5rem]' : 'w-[7.75rem]'} shrink-0`}
         />
         <select
           aria-label="Kształt fali"

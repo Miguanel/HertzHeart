@@ -1,5 +1,6 @@
 import { CompositionSchema, type Composition } from './schema'
 import { newId, normalizeEnvelope } from './envelope'
+import { quantizeMilliHz } from './frequency'
 
 /** Waliduje dane z niezaufanego źródła (link, plik, API) i doprowadza je do spójnej postaci. */
 export function parseComposition(raw: unknown): Composition {
@@ -13,6 +14,7 @@ export function parseComposition(raw: unknown): Composition {
     ...comp,
     tracks: comp.tracks.map((track) => ({
       ...track,
+      frequencyMilliHz: quantizeMilliHz(track.frequencyMilliHz),
       clips: [...track.clips]
         .sort((a, b) => a.start - b.start)
         .map((clip) => ({ ...clip, envelope: normalizeEnvelope(clip.envelope, clip.duration) })),

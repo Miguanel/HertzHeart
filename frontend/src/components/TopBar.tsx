@@ -3,6 +3,8 @@ import { useStore } from 'zustand'
 import { useSaveStatus } from '../store/autosave'
 import { redo, undo, useProjectStore } from '../store/projectStore'
 import { useTour } from '../tour/tourStore'
+import { useUi, type AppMode } from '../store/uiStore'
+import { Icon, type IconName } from './icons'
 import { Button, IconButton } from './ui'
 
 function Logo() {
@@ -27,7 +29,32 @@ function Logo() {
 
 const STATUS_LABEL = { idle: '', saving: 'Zapisywanie…', saved: 'Zapisano lokalnie', error: 'Błąd zapisu' } as const
 
-export function TopBar({ onProjects, onShare }: { onProjects: () => void; onShare: () => void }) {
+function ModeSwitch() {
+  const mode = useUi((s) => s.mode)
+  const setMode = useUi((s) => s.setMode)
+  const btn = (id: AppMode, icon: IconName, label: string) => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={mode === id}
+      onClick={() => setMode(id)}
+      className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 font-display text-[10px] uppercase tracking-[0.18em] transition-colors ${
+        mode === id ? 'bg-neon/15 text-neon' : 'text-muted hover:text-slate-200'
+      }`}
+    >
+      <Icon name={icon} className="size-4" />
+      {label}
+    </button>
+  )
+  return (
+    <div role="tablist" aria-label="Tryb" className="hidden gap-1 rounded-lg border border-line/70 p-0.5 lg:flex">
+      {btn('sequencer', 'wave', 'Sekwencer')}
+      {btn('binaural', 'binaural', 'Binauralne')}
+    </div>
+  )
+}
+
+export function TopBar({ onProjects, onShare, onSettings }: { onProjects: () => void; onShare: () => void; onSettings: () => void }) {
   const title = useProjectStore((s) => s.composition.title)
   const setTitle = useProjectStore((s) => s.setTitle)
   const canUndo = useStore(useProjectStore.temporal, (s) => s.pastStates.length > 0)
@@ -58,7 +85,9 @@ export function TopBar({ onProjects, onShare }: { onProjects: () => void; onShar
           {STATUS_LABEL[status]}
         </span>
       </div>
+      <ModeSwitch />
       <div className="flex items-center gap-1 sm:gap-1.5">
+        <IconButton icon="settings" label="Ustawienia" onClick={onSettings} />
         <IconButton icon="help" label="Poradnik" onClick={offerTour} data-tour="help-button" />
         <IconButton icon="undo" label="Cofnij (Ctrl+Z)" onClick={undo} disabled={!canUndo} data-tour="undo" />
         <IconButton icon="redo" label="Ponów (Ctrl+Shift+Z)" onClick={redo} disabled={!canRedo} className="max-sm:hidden" />

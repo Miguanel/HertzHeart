@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DEFAULT_PRESET_OPTIONS, PRESETS, trackColor } from '../model/envelope'
 import { formatHz } from '../model/frequency'
 import { MIN_CLIP_S } from '../model/schema'
+import { useSettings } from '../store/settings'
 import { findClip, useProjectStore } from '../store/projectStore'
 import { EnvelopeEditor } from './EnvelopeEditor'
 import { Button, IconButton, NumberField, Panel } from './ui'
@@ -13,6 +14,7 @@ export function ClipInspector() {
   const applyPreset = useProjectStore((s) => s.applyPreset)
   const removeClip = useProjectStore((s) => s.removeClip)
   const [opts, setOpts] = useState(DEFAULT_PRESET_OPTIONS)
+  const decimals = useSettings((s) => s.decimals)
 
   const found = findClip(comp, selectedClipId)
   if (!found) {
@@ -33,7 +35,7 @@ export function ClipInspector() {
       title={
         <span>
           Diagram · <span style={{ color }}>{track.name}</span>{' '}
-          <span className="normal-case tracking-normal">{formatHz(track.frequencyMilliHz)} Hz</span>
+          <span className="normal-case tracking-normal">{formatHz(track.frequencyMilliHz, decimals)} Hz</span>
         </span>
       }
       actions={<IconButton size="sm" icon="trash" label="Usuń segment" variant="danger" onClick={() => removeClip(clip.id)} />}

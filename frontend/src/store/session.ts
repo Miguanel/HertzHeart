@@ -25,14 +25,12 @@ export function usePlaybackController() {
   const masterVolume = useProjectStore((s) => s.composition.masterVolume)
   const lastTracks = useRef(tracks)
 
-  // Zmiana ścieżek podczas odtwarzania -> przebudowa grafu od bieżącej pozycji.
+  // Zmiana ścieżek podczas odtwarzania -> płynne przejście do nowego stanu (bufor łagodzący w silniku).
   useEffect(() => {
     if (lastTracks.current === tracks) return
     lastTracks.current = tracks
     if (engine.state !== 'playing') return
-    const id = setTimeout(() => {
-      if (engine.state === 'playing') void engine.play(useProjectStore.getState().composition, engine.getPosition())
-    }, 120)
+    const id = setTimeout(() => engine.update(useProjectStore.getState().composition), 40)
     return () => clearTimeout(id)
   }, [tracks])
 

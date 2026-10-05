@@ -244,3 +244,30 @@ Render: jeden Web Service z Dockerfile + Render Postgres (`DATABASE_URL`).
 8. Udostępnianie: link w hashu, plik JSON, krótkie linki.
 9. Eksport WAV.
 10. Dockerfile + render.yaml, deploy.
+
+---
+
+## 9. Aktualizacja (październik 2026): bufor łagodzący, precyzja 0,0000001 Hz, zakładka binauralna, fale mózgowe
+
+**Silnik audio – nowy model (zastępuje opis z sekcji 4)**
+- Każda ścieżka = **jeden ciągły generator** na czas odtwarzania (`audio/schedule.ts` → `createTrackVoice`, `trackGainPoints`) zamiast osobnego oscylatora na segment. Między segmentami gra w ciszy, a segmenty stykające się ze sobą łączą się bez przerwy.
+- **Bufor łagodzący** (`store/settings.ts`, domyślnie 1 s, zakres 0,05–5 s): `engine.update(comp)` nie przebudowuje grafu, tylko płynnie doprowadza dźwięk do nowego stanu: częstotliwość po rampie w skali log, głośność/diagram/kanał po rampie liniowej (`holdAt` = `cancelAndHoldAtTime` z obejściem dla Firefoksa), a zmiana kształtu fali = przenikanie dwóch generatorów. Start/pauza/stop: wejście i wyjście maks. 1,5 s, przewijanie: przenikanie maks. 0,3 s (opcja w ustawieniach).
+- **Ochrona wyjścia**: master → filtr DC (górnoprzepustowy 0,5 Hz) → `guard` (płynne wyciszenie i powrót po `devicechange` / przerwaniu kontekstu przez system) → limiter.
+- **Generator 64-bit** (`audio/osc.ts`): AudioWorklet z fazą i częstotliwością typu double (PolyBLEP dla prostokąta/piły). Ładowany z Bloba; gdy niedostępny (brak HTTPS, stara przeglądarka) – fallback na `OscillatorNode` (float32). Zweryfikowane: błąd fazy po 1 h ≈ 1e-9 cyklu, brak skoku przy zmianie 200→210 Hz.
+- Eksport WAV (`scheduleOffline`) korzysta z tego samego modelu obwiedni i generatora.
+
+**Precyzja częstotliwości**
+- Ustawienie 0–7 miejsc po przecinku (domyślnie 3). `frequencyMilliHz` może być ułamkiem mHz (kwantyzacja do 0,0001 mHz = 0,0000001 Hz, `quantizeMilliHz`); `formatHz(mHz, decimals)` / `parseHz(text, {decimals, min, max})` liczą na liczbach całkowitych.
+- Uwaga: zegar karty dźwiękowej ma tolerancję rzędu ±20 ppm, więc bezwzględna częstotliwość nie jest dokładna do 7 miejsc; różnica L/P (dudnienie) jest zachowana dokładnie.
+
+**Zakładka „Binauralne”** (`components/BinauralStudio.tsx`, `store/binauralStore.ts`, `components/Knob.tsx`)
+- Tryb aplikacji `sequencer | binaural` (`uiStore.mode`): przełącznik w TopBar (desktop) i 4. pozycja w dolnej nawigacji (telefon).
+- Pokrętła (skala log): nośna 20–1500 Hz, fala mózgowa (dudnienie) 0,001–1000 Hz, z kolorowymi łukami pasm; pola liczbowe z precyzją z ustawień; szybkie pasma Delta/Theta/Alfa/Beta/Gamma.
+- Lista „Moje fale”: wiele fal może grać naraz (miks), każda z głośnością; zapis w localStorage; „Dodaj do projektu” tworzy parę ścieżek L/P. Konwencja: L = nośna, P = nośna + dudnienie.
+
+**Fale mózgowe** (`data/brainwaves.ts`, `components/Brainwaves.tsx`)
+- Trzy tabele od użytkownika: pasma (ISF … Ultra-Fast), zjawiska precyzyjne (~0.1 Hz … 600–900 Hz) oraz sprzężenia CFC.
+- `matchFrequency(hz)` → podsekcja + zjawiska; `detectCouplings(freqs)` → CFC (każda częstotliwość może spełnić tylko jeden składnik).
+- Jawna informacja: komunikat po dodaniu ścieżki / zmianie częstotliwości (dla pary L/P – dudnienie), ikona mózgu przy ścieżce, pasek „Fale mózgowe” nad osią czasu (dudnienia + CFC), pełny opis w zakładce binauralnej. Zawsze z zastrzeżeniem, że opisy dotyczą oscylacji EEG, a nie skutków słuchania.
+
+**Ustawienia** (ikona zębatki): czas bufora, łagodny transport, liczba miejsc po przecinku, informowanie o pasmach; status generatora (64-bit / float32).

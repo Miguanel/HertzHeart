@@ -1,6 +1,6 @@
 import { compositionDuration } from '../model/envelope'
 import type { Composition } from '../model/schema'
-import { createMasterChain, scheduleComposition } from './schedule'
+import { createMasterChain, scheduleOffline } from './schedule'
 
 export const MAX_EXPORT_SECONDS = 60 * 60
 
@@ -14,7 +14,7 @@ export async function renderToWav(comp: Composition, sampleRate = 44_100): Promi
   const ctx = new OfflineAudioContext({ numberOfChannels: 2, length, sampleRate })
   const chain = createMasterChain(ctx, comp.masterVolume)
   chain.output.connect(ctx.destination)
-  scheduleComposition(ctx, chain.input, comp, 0, 0)
+  await scheduleOffline(ctx, chain.input, comp, duration)
   const buffer = await ctx.startRendering()
   return encodeWav(buffer)
 }
