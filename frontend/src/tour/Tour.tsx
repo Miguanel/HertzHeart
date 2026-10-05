@@ -208,10 +208,10 @@ function Welcome() {
           <rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="#070b16" stroke="#22e4ff" strokeOpacity=".6" />
           <path d="M5 16c2.2-7 4.4-7 6.6 0s4.4 7 6.6 0 4.4-7 6.6 0" fill="none" stroke="#22e4ff" strokeWidth="2.2" strokeLinecap="round" />
         </svg>
-        <h2 className="font-display text-lg tracking-wide text-neon">Witaj w HeartzHeart</h2>
+        <h2 className="font-display text-lg tracking-wide text-neon">Witaj w Hertz Hearth</h2>
       </div>
       <p className="text-sm leading-relaxed text-slate-200">
-        HeartzHeart to sekwencer częstotliwości: wybierasz tony z biblioteki (albo wpisujesz własne z dokładnością do 0,001 Hz),
+        Hertz Hearth (Herce Serca) to sekwencer częstotliwości: wybierasz tony z biblioteki (albo wpisujesz własne z dokładnością nawet do 0,0000001 Hz),
         układasz je na osi czasu i rysujesz, jak ma zmieniać się ich głośność.
       </p>
       <p className="text-sm leading-relaxed text-muted">

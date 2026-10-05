@@ -1,4 +1,4 @@
-# HeartzHeart
+# Hertz Hearth – Herce Serca
 
 Sekwencer częstotliwości w przeglądarce: biblioteka częstotliwości (dokładność 0,001 Hz), projekty ze ścieżkami
 i segmentami czasowymi, diagramy głośności, zapis lokalny (IndexedDB/PWA), udostępnianie linkiem i eksport WAV.

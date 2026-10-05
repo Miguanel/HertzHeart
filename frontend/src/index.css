@@ -176,3 +176,18 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Wypełnianie granicy suwaka pasma podczas przytrzymania (BandSlider). */
+@keyframes band-hold {
+  from {
+    transform: scaleX(0);
+    opacity: 0.4;
+  }
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+.band-hold {
+  animation: band-hold linear forwards;
+}

@@ -6,6 +6,8 @@
  * Opisy mają charakter edukacyjny – dotyczą oscylacji rejestrowanych w mózgu, a nie skutków słuchania dźwięku.
  */
 
+import type { BrainRegionId } from './brainRegions'
+
 export type BrainTone = 'neutral' | 'warn'
 
 export interface BrainBand {
@@ -16,6 +18,8 @@ export interface BrainBand {
   max: number
   states: string
   area: string
+  /** Obszary do zaznaczenia na schemacie mózgu. */
+  regions: BrainRegionId[]
   notes: string
   color: string
   tone: BrainTone
@@ -29,6 +33,7 @@ export interface BrainPhenomenon {
   min: number
   max: number
   area: string
+  regions: BrainRegionId[]
   notes: string
   tone: BrainTone
 }
@@ -45,6 +50,7 @@ export interface BrainCoupling {
   subtitle: string
   components: CouplingComponent[]
   areas: string
+  regions: BrainRegionId[]
   states: string
   mechanism: string
   tone: BrainTone
@@ -70,6 +76,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     states:
       'Nieświadoma regulacja bazowa. Człowiek nie odczuwa tego jako „myśli”, lecz jako ogólny poziom energii, napięcia w ciele i rytmu dobowego.',
     area: 'Sieć Domyślna Mózgu (DMN), pień mózgu, podwzgórze.',
+    regions: ['dmn', 'brainstem', 'hypothalamus'],
     notes:
       'Raporty laboratoryjne: ściśle korelują z sygnałem BOLD w rezonansie fMRI. Używane w specjalistycznym neurofeedbacku (ILF) do leczenia traumy (PTSD) i stabilizacji autonomicznego układu nerwowego.',
     color: C.isf,
@@ -83,6 +90,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     states:
       'Stan głębokiej nieświadomości, całkowite „odcięcie” od świata zewnętrznego. Zjawisko „up/down states” (naprzemienne wyciszanie i pobudzanie sieci neuronowych).',
     area: 'Rozległe sieci kory nowej (Neocortex).',
+    regions: ['cortex'],
     notes:
       'Zjawisko kluczowe dla tzw. homeostazy synaptycznej. Podczas tej częstotliwości mózg „usuwa” zbędne połączenia synaptyczne zebrane w ciągu dnia, robiąc miejsce na nową wiedzę.',
     color: C.slow,
@@ -95,6 +103,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     max: 2,
     states: 'Głęboki sen wolnofalowy (N3). Brak marzeń sennych, odczucie głębokiego „resetu” po przebudzeniu.',
     area: 'Pętle wzgórzowo-korowe.',
+    regions: ['thalamus', 'cortex'],
     notes:
       'Medycyna: główny wskaźnik prawidłowego wydzielania hormonu wzrostu (HGH). Jeśli fali tej brakuje, pacjenci zgłaszają przewlekłe zmęczenie (np. w fibromialgii).',
     color: C.delta,
@@ -107,6 +116,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     max: 4,
     states: 'Stan silnego otępienia, przymglenia świadomości, faza przejściowa między snem a czuwaniem.',
     area: 'Struktury podkorowe, hipokamp.',
+    regions: ['basalGanglia', 'thalamus', 'hippocampus'],
     notes:
       'U dorosłych w stanie czuwania obecność tej fali to patologia (często marker guzów mózgu, demencji lub urazów TBI). U niemowląt to stan domyślny.',
     color: C.delta,
@@ -120,6 +130,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     states:
       'Odmienne stany świadomości, hipnagogia (obrazy widoczne przed zaśnięciem), faza REM (żywe sny), głęboka medytacja.',
     area: 'Formacja hipokampa, ciało migdałowate.',
+    regions: ['hippocampus', 'amygdala'],
     notes:
       'Wiąże się z konsolidacją pamięci epizodycznej. Nadmiar tej fali w stanie czuwania (tzw. „spowolnienie limbiczne”) występuje u osób z depresją i ciężkim ADHD.',
     color: C.theta,
@@ -132,6 +143,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     max: 8,
     states: 'Intuicyjne wglądy, stan „zawieszenia” przy rozwiązywaniu złożonych problemów mentalnych (np. trudne zadanie z matematyki).',
     area: 'Przednia kora obręczy (ACC), przyśrodkowa kora przedczołowa.',
+    regions: ['acc', 'mpfc'],
     notes:
       'Badania: Fm-Theta (Frontal Midline Theta) rośnie proporcjonalnie do obciążenia pamięci roboczej. Jest dowodem na to, że mózg intensywnie przeszukuje zasoby wewnętrzne.',
     color: C.theta,
@@ -144,6 +156,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     max: 10,
     states: 'Odprężenie, lekkość, odpływanie myślami, zmniejszenie napięcia mięśniowego. Zjawisko występuje po zamknięciu oczu.',
     area: 'Płaty potyliczne i ciemieniowe.',
+    regions: ['occipital', 'parietal'],
     notes:
       '„Most” między podświadomością a świadomością. Trening tej fali często wykorzystuje się u pacjentów z wypaleniem zawodowym w celu redukcji stresu.',
     color: C.alpha,
@@ -156,6 +169,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     max: 12,
     states: 'Czuwanie w stanie fizycznego spoczynku. Odczucie dystansu, biernej obserwacji.',
     area: 'Kora czuciowo-ruchowa (bruzda środkowa).',
+    regions: ['motor', 'sensory'],
     notes:
       'Rytm Mu tłumi się natychmiast, gdy wykonamy ruch lub… gdy widzimy, jak ktoś inny go wykonuje. Jest powiązany z działaniem neuronów lustrzanych (empatia, uczenie się przez naśladownictwo).',
     color: C.alpha,
@@ -168,6 +182,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     max: 15,
     states: 'Spokojna, rozluźniona uwaga (tzw. zrelaksowana czujność). Stan optymalny np. do czytania książki ze zrozumieniem.',
     area: 'Kora ruchowa i układ siatkowaty.',
+    regions: ['motor', 'sensory', 'reticular'],
     notes:
       'Raporty medyczne: zwiększanie amplitudy SMR zapobiega napadom padaczkowym (podnosi próg drgawkowy) i radykalnie zmniejsza nadpobudliwość ruchową u dzieci z ADHD.',
     color: C.beta,
@@ -180,6 +195,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     max: 20,
     states: 'Aktywna uwaga, logiczne myślenie, przetwarzanie informacji z zewnątrz, ożywiona dyskusja.',
     area: 'Kora przedczołowa, płaty czołowe.',
+    regions: ['prefrontal', 'frontal'],
     notes: 'Optymalne pasmo do pracy intelektualnej. Niedobór w płatach czołowych skutkuje prokrastynacją i „mgłą mózgową”.',
     color: C.beta,
     tone: 'neutral',
@@ -191,6 +207,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     max: 30,
     states: 'Niepokój, napięcie, ekscytacja, reakcja stresowa „walcz lub uciekaj”. Odczucie „pędzących myśli”.',
     area: 'Ciało migdałowate, rozsiana kora.',
+    regions: ['amygdala', 'cortex'],
     notes:
       'Klinicznie: chroniczne utrzymywanie się tej fali to marker zaburzeń lękowych (nerwicy), bezsenności i natręctw (OCD). Mózg traci ogromne ilości glukozy.',
     color: C.beta,
@@ -204,6 +221,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     states:
       '„Efekt AHA!”, moment nagłego olśnienia, nagła klarowność. Poczucie absolutnej jedności postrzegania (obraz, dźwięk i dotyk zlewają się w jedno).',
     area: 'Rozległa sieć korowo-wzgórzowa (synchronizacja całego mózgu).',
+    regions: ['cortex', 'thalamus'],
     notes:
       'Badania lab.: stymulacja światłem i dźwiękiem o częstotliwości 40 Hz pomaga usuwać blaszki amyloidowe w chorobie Alzheimera u myszy laboratoryjnych (aktywacja mikrogleju).',
     color: C.gamma,
@@ -217,6 +235,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     states:
       '„Stan Flow”, hiper-świadomość, przekraczanie barier własnego „ego”. Doświadczany przez mistrzów sztuk walki i zaawansowanych medytujących.',
     area: 'Kora przedczołowa współpracująca z układem limbicznym.',
+    regions: ['prefrontal', 'amygdala', 'hippocampus'],
     notes:
       'Bardzo rzadko rejestrowana trwale u przeciętnego człowieka (pojawia się we fleszach). Wymaga niezwykle wysokiego zestrojenia metabolicznego mózgu.',
     color: C.gamma,
@@ -229,6 +248,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     max: 250,
     states: 'Niewyczuwalne świadomie. Działają w tle podczas snu. Występują podczas nagłego odtwarzania wspomnień.',
     area: 'Hipokamp i kora śródwęchowa.',
+    regions: ['hippocampus', 'temporal'],
     notes:
       'Neurologia kliniczna: „Ripples” to paczki ultrakrótkich impulsów, podczas których mózg w ułamku sekundy przegrywa wspomnienia z całego dnia z hipokampa do kory czołowej – na „twardy dysk” pamięci długotrwałej.',
     color: C.hfo,
@@ -241,6 +261,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     max: 500,
     states: 'Patologiczne; pacjent może odczuwać aurę przedpadaczkową, dezorientację, dziwne smaki/zapachy.',
     area: 'Strefy epileptogenne (uszkodzone fragmenty tkanki mózgowej).',
+    regions: ['hippocampus', 'temporal'],
     notes:
       'Zastosowanie medyczne: zapisywane wyłącznie z elektrod wszczepionych do mózgu (iEEG). Klinicyści używają tego pasma jako „radaru” do precyzyjnego lokalizowania i operacyjnego usuwania ognisk padaczkowych.',
     color: C.hfo,
@@ -253,6 +274,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     max: 1000,
     states: 'Wrażenia zmysłowe (ukłucie igły, nagły błysk) przekształcane na potencjały czynnościowe. Poziom pojedynczej komórki, a nie sieci.',
     area: 'Neurony czuciowe, aksony, synapsy.',
+    regions: ['sensory'],
     notes:
       'Powyżej 500 Hz wchodzimy w zakres MUA (Multi-Unit Activity). To częstotliwość wystrzałów pojedynczych neuronów (iglice – action potentials). Nie jest to rytm całego mózgu, lecz „język maszynowy” pojedynczych komórek.',
     color: C.hfo,
@@ -268,6 +290,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 0.08,
     max: 0.12,
     area: 'Pień mózgu, układ autonomiczny, DMN.',
+    regions: ['brainstem', 'dmn'],
     notes:
       'Idealnie korelują z hemodynamiczną odpowiedzią mózgu w fMRI (przepływ krwi). Częstotliwość ta odzwierciedla naturalny rytm przełączania się mózgu między skupieniem na zewnątrz a introspekcją.',
     tone: 'neutral',
@@ -279,6 +302,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 0.8,
     max: 1.2,
     area: 'Sieci korowo-korowe (Neocortex).',
+    regions: ['cortex'],
     notes:
       'Fundamentalny mechanizm snu NREM. W tym dokładnym przedziale mózg „dyryguje” procesem konsolidacji pamięci, synchronizując inne szybsze fale (wrzeciona i ripples).',
     tone: 'neutral',
@@ -290,6 +314,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 2.75,
     max: 3.25,
     area: 'Rozległa kora współpracująca ze wzgórzem.',
+    regions: ['cortex', 'thalamus'],
     notes:
       'Patologia kliniczna: klasyczny i bardzo precyzyjny biomarker padaczki nieświadomości (petit mal). Pacjent na kilka sekund „zastyga” ze wzrokiem utkwionym w przestrzeń, nie tracąc napięcia mięśniowego.',
     tone: 'warn',
@@ -301,6 +326,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 6.5,
     max: 8,
     area: 'Hipokamp (struktury limbiczne).',
+    regions: ['hippocampus'],
     notes:
       'Choć u zwierząt (np. szczurów) theta podczas eksploracji wynosi równe 8 Hz, u ludzi pik Thety odpowiedzialnej za nawigację przestrzenną („GPS mózgu”) i pamięć epizodyczną występuje precyzyjnie w okolicach 7 Hz.',
     tone: 'neutral',
@@ -312,6 +338,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 8.5,
     max: 10.5,
     area: 'Kora potyliczna.',
+    regions: ['occipital'],
     notes:
       'Każdy człowiek ma swój unikalny „odcisk palca” częstotliwości Alfa (np. dokładnie 9.8 Hz). Badania dowodzą, że osoby z wyższym szczytem IAF (np. 10.5 Hz vs 8.5 Hz) cechują się szybszym tempem przetwarzania informacji poznawczych.',
     tone: 'neutral',
@@ -323,6 +350,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 11,
     max: 13,
     area: 'Kora czołowa (generowane w jądrze siatkowatym wzgórza – TRN).',
+    regions: ['frontal', 'thalamus'],
     notes:
       'Występują podczas 2. fazy snu NREM. Są kluczowe dla przetwarzania pamięci deklaratywnej. Zmniejszona gęstość wrzecion w tym paśmie to wczesny biomarker schizofrenii.',
     tone: 'neutral',
@@ -334,6 +362,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 13,
     max: 15,
     area: 'Kora ciemieniowa i czuciowo-ruchowa.',
+    regions: ['parietal', 'sensory', 'motor'],
     notes:
       'Występują tuż po wolnych wrzecionach. Odpowiadają za konsolidację pamięci motorycznej (np. nauka jazdy na rowerze czy gry na instrumencie).',
     tone: 'neutral',
@@ -345,6 +374,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 13,
     max: 15,
     area: 'Kora czuciowo-ruchowa (Rolandyczna).',
+    regions: ['motor', 'sensory'],
     notes:
       'Odkryty przez M. Stermana u kotów. Jego precyzyjne wzmacnianie metodą neurofeedbacku (dokładnie wokół 14 Hz) jest jedną z nielicznych niefarmakologicznych metod podnoszenia progu drgawkowego u chorych na padaczkę lekooporną.',
     tone: 'neutral',
@@ -356,6 +386,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 18,
     max: 22,
     area: 'Pierwotna kora ruchowa (M1).',
+    regions: ['motor'],
     notes:
       'Zjawisko występujące ułamek sekundy po zakończeniu ruchu (np. po zaciśnięciu dłoni). Kora ruchowa generuje potężny, wąski sygnał ~20 Hz, który działa jak „zatwierdzenie stanu”, resetując układ przed kolejnym ruchem.',
     tone: 'neutral',
@@ -367,6 +398,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 39,
     max: 41,
     area: 'Kora słuchowa, pętle wzgórzowo-korowe.',
+    regions: ['auditory', 'thalamus'],
     notes:
       'Precyzyjna częstotliwość 40 Hz to moment, w którym mózg łączy cechy obiektu (np. okrągły kształt, czerwony kolor i zapach jabłka) w jedno pojęcie świadome. U osób ze spektrum autyzmu i schizofrenią faza odpowiedzi na 40 Hz jest często zaburzona.',
     tone: 'neutral',
@@ -378,6 +410,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 140,
     max: 200,
     area: 'Obszar CA1 hipokampa.',
+    regions: ['hippocampus'],
     notes:
       'Rejestrowane w głębi mózgu. Występują w spoczynku i we śnie. Podczas tego ułamka sekundy (ok. 100 ms) mózg odtwarza („replay”) ścieżkę neuronową aktywowaną za dnia, ale 10 do 20 razy szybciej. Przenosi w ten sposób wspomnienia do kory nowej.',
     tone: 'neutral',
@@ -389,6 +422,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 250,
     max: 500,
     area: 'Tkanka epileptogenna.',
+    regions: ['hippocampus', 'temporal'],
     notes:
       'Badania iEEG pokazują, że tkanka generująca te mikroskopijne oscylacje jest uszkodzona i stanowi ognisko zapalne dla ataków padaczki. Chirurdzy używają częstotliwości >250 Hz jako mapy wskazującej, który fragment mózgu usunąć.',
     tone: 'warn',
@@ -400,6 +434,7 @@ export const BRAIN_PHENOMENA: BrainPhenomenon[] = [
     min: 600,
     max: 900,
     area: 'Promienistość wzgórzowo-korowa.',
+    regions: ['thalamus', 'sensory'],
     notes:
       'Rejestrowane powierzchniowo, ale nie są to już oscylacje sieci. To synchroniczny, salwowy „ogień” (wystrzały potencjałów czynnościowych) setek tysięcy pojedynczych aksonów podróżujących od wzgórza do kory po podaniu zewnętrznego bodźca prądowego na nerw dłoni.',
     tone: 'neutral',
@@ -416,6 +451,7 @@ export const BRAIN_COUPLINGS: BrainCoupling[] = [
       { label: 'Gamma', min: 40, max: 100 },
     ],
     areas: 'Oś pionowa: hipokamp (głęboko) ↔ kora przedczołowa (powierzchnia).',
+    regions: ['hippocampus', 'prefrontal'],
     states: 'Pojemność pamięci roboczej, przyswajanie sekwencji (np. zapamiętywanie numeru telefonu w locie).',
     mechanism:
       'Fale Theta działają jak „taktowanie zegara”. Na każdym szczycie fali Theta (co ok. 150 ms) „podczepia się” paczka szybkich fal Gamma (każda paczka to jeden element do zapamiętania). Im dłuższa fala Theta, tym więcej paczek Gamma się zmieści (wyższe IQ / lepsza pamięć robocza).',
@@ -431,6 +467,7 @@ export const BRAIN_COUPLINGS: BrainCoupling[] = [
       { label: 'Ripples ~200 Hz', min: 140, max: 250 },
     ],
     areas: 'Trójkąt głęboko-korowy: kora nowa ↔ wzgórze ↔ hipokamp.',
+    regions: ['cortex', 'thalamus', 'hippocampus'],
     states:
       'NREM. Całkowita nieświadomość, ale skrajna aktywność w tle. Moment przenoszenia wspomnień krótkotrwałych na pamięć długotrwałą.',
     mechanism:
@@ -446,6 +483,7 @@ export const BRAIN_COUPLINGS: BrainCoupling[] = [
       { label: 'Alpha ciemieniowa', min: 8, max: 12 },
     ],
     areas: 'Płaszczyzna strzałkowa (przód-tył): kora przedczołowa (frontal) ↔ kora ciemieniowa (parietal).',
+    regions: ['prefrontal', 'parietal'],
     states: 'Stan najwyższego obciążenia mentalnego (np. rozwiązywanie skomplikowanego równania, gra w szachy na czas).',
     mechanism:
       'Czołowa Theta wzrasta (aktywne myślenie, przeszukiwanie „bazy danych”), podczas gdy potyliczno-ciemieniowa Alpha również rośnie, aby zadziałać jak tłumik akustyczny – całkowicie odcina mózg od bodźców zmysłowych (nie słyszysz, co ktoś do ciebie mówi, gdy o czymś intensywnie myślisz).',
@@ -460,6 +498,7 @@ export const BRAIN_COUPLINGS: BrainCoupling[] = [
       { label: 'Gamma 40+ Hz', min: 40, max: 100 },
     ],
     areas: 'Płaszczyzna poprzeczna / ogniskowa: kora potyliczna (wzrokowa) i obszary czołowe.',
+    regions: ['occipital', 'frontal'],
     states: 'Skupienie wzroku na jednym detalu w tłumie (np. szukanie twarzy znajomego na peronie).',
     mechanism:
       'Alpha działa w mózgu jak zasłona. Gdy kierujesz na coś uwagę, „zasłona” Alpha opada (desynchronizacja) w precyzyjnym punkcie kory wzrokowej, co pozwala na natychmiastowy „wybuch” fal Gamma w tym miejscu, przetwarzających detale obrazu. Reszta pola widzenia pozostaje stłumiona przez Alphę.',
@@ -474,6 +513,7 @@ export const BRAIN_COUPLINGS: BrainCoupling[] = [
       { label: 'Gamma 60–90 Hz', min: 60, max: 90 },
     ],
     areas: 'Układ pozapiramidowy: kora ruchowa (M1) ↔ zwoje podstawy.',
+    regions: ['motor', 'basalGanglia'],
     states: 'Płynne poruszanie się, intencja ruchu przechodząca w akcję. Hamowanie niepotrzebnych tików.',
     mechanism:
       'Beta to fala hamująca ruch (utrzymuje mięśnie w statycznym pogotowiu). Aby wykonać ruch, pasmo Beta musi natychmiast zaniknąć, a zwoje podstawy odpalają falę Gamma ułatwiającą ruch. Brak zdolności do takiego płynnego przełączania między Betą a Gammą to główny mechanizm objawów choroby Parkinsona.',
@@ -488,6 +528,7 @@ export const BRAIN_COUPLINGS: BrainCoupling[] = [
       { label: 'Beta', min: 15, max: 30 },
     ],
     areas: 'Sieci rozproszone: ciało migdałowate ↔ kora przedczołowa.',
+    regions: ['amygdala', 'prefrontal'],
     states:
       'Stan patologiczny / dyskomfort. Silne odczucie lęku, stresu pourazowego (PTSD) lub ataku paniki. Odczucie zmęczenia połączonego z natłokiem myśli (tzw. „wired and tired”).',
     mechanism:

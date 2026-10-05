@@ -18,9 +18,9 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
-        name: 'HeartzHeart',
-        short_name: 'HeartzHeart',
-        description: 'Sekwencer częstotliwości z dokładnością 0,001 Hz i diagramami głośności.',
+        name: 'Hertz Hearth – Herce Serca',
+        short_name: 'Hertz Hearth',
+        description: 'Herce Serca – sekwencer częstotliwości, fale binauralne i diagramy głośności.',
         lang: 'pl',
         start_url: '/',
         display: 'standalone',

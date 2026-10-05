@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { engine } from '../audio/engine'
-import { BRAIN_BANDS, QUICK_BANDS, detectCouplings, matchFrequency } from '../data/brainwaves'
+import { QUICK_BANDS, detectCouplings, matchFrequency } from '../data/brainwaves'
 import { createBinauralPair } from '../model/envelope'
 import { formatHz } from '../model/frequency'
 import { BEAT_MAX, BEAT_MIN, CARRIER_MAX, CARRIER_MIN, useBinaural, type BinauralWave } from '../store/binauralStore'
@@ -9,7 +9,7 @@ import { useSettings } from '../store/settings'
 import { useUi } from '../store/uiStore'
 import { BrainInfoView, CouplingCard, Disclaimer } from './Brainwaves'
 import { Icon } from './icons'
-import { Knob } from './Knob'
+import { BandSlider } from './BandSlider'
 import { Button, FrequencyField, IconButton, NumberField, Panel, Slider } from './ui'
 
 /** Łączy listę grających fal z silnikiem audio – działa także po przełączeniu na sekwencer. */
@@ -23,6 +23,9 @@ export function useBinauralPlayback() {
     )
   }, [waves, playing])
 }
+
+const logNorm = (v: number, min: number, max: number) => Math.log(v / min) / Math.log(max / min)
+const logValue = (n: number, min: number, max: number) => min * (max / min) ** n
 
 const togglePlay = (id: string) => {
   void engine.unlock() // w obsłudze kliknięcia – wymóg przeglądarek
@@ -41,8 +44,6 @@ function Generator({ wave }: { wave: BinauralWave }) {
 
   const carrier = wave.carrierMilliHz / 1000
   const beat = wave.beatMilliHz / 1000
-  const band = matchFrequency(beat).band
-  const color = band?.color ?? 'var(--color-plasma)'
   const set = (patch: Partial<BinauralWave>) => update(wave.id, patch)
 
   const addToProject = () => {
@@ -75,55 +76,54 @@ function Generator({ wave }: { wave: BinauralWave }) {
         />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-line/60 bg-white/[0.02] p-3">
-          <div className="font-display text-[10px] uppercase tracking-[0.2em] text-muted">Częstotliwość nośna</div>
-          <Knob
+      <section className="space-y-2 rounded-2xl border border-line/60 bg-white/[0.02] p-3">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-display text-[10px] uppercase tracking-[0.2em] text-muted">Częstotliwość nośna</h3>
+          <span className="font-mono text-[11px] text-muted">lewe ucho</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Slider
             label="Częstotliwość nośna"
-            value={carrier}
-            min={CARRIER_MIN / 1000}
-            max={CARRIER_MAX / 1000}
-            log
-            onChange={(hz) => set({ carrierMilliHz: hz * 1000 })}
+            value={logNorm(carrier, CARRIER_MIN / 1000, CARRIER_MAX / 1000)}
+            min={0}
+            max={1}
+            step={0.0005}
+            onChange={(n) => set({ carrierMilliHz: Math.round(logValue(n, CARRIER_MIN / 1000, CARRIER_MAX / 1000) * 1000) })}
+            className="flex-1"
           />
           <FrequencyField
-            size="md"
             label="Częstotliwość nośna w Hz"
             mHz={wave.carrierMilliHz}
             min={CARRIER_MIN}
             max={CARRIER_MAX}
             onCommit={(mHz) => set({ carrierMilliHz: mHz })}
-            className="w-full max-w-56"
+            className={`${decimals > 4 ? 'w-40' : 'w-32'} shrink-0`}
           />
-          <div className="font-mono text-[11px] text-muted">Lewe ucho: {formatHz(wave.carrierMilliHz, decimals)} Hz</div>
         </div>
+        <div className="flex justify-between font-mono text-[9px] text-muted">
+          <span>{CARRIER_MIN / 1000} Hz</span>
+          <span>{CARRIER_MAX / 1000} Hz</span>
+        </div>
+      </section>
 
-        <div className="flex flex-col items-center gap-2 rounded-2xl border border-line/60 bg-white/[0.02] p-3">
-          <div className="font-display text-[10px] uppercase tracking-[0.2em] text-muted">Fala mózgowa (wynik)</div>
-          <Knob
-            label="Częstotliwość fali mózgowej (dudnienie)"
-            value={beat}
-            min={BEAT_MIN / 1000}
-            max={BEAT_MAX / 1000}
-            log
-            color={color}
-            arcs={BRAIN_BANDS.map((b) => ({ min: b.min, max: b.max, color: b.color }))}
-            onChange={(hz) => set({ beatMilliHz: hz * 1000 })}
-          />
+      <section className="space-y-2 rounded-2xl border border-line/60 bg-white/[0.02] p-3">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-display text-[10px] uppercase tracking-[0.2em] text-muted">Fala mózgowa (wynik)</h3>
           <FrequencyField
-            size="md"
             label="Częstotliwość fali mózgowej w Hz"
             mHz={wave.beatMilliHz}
             min={BEAT_MIN}
             max={BEAT_MAX}
             onCommit={(mHz) => set({ beatMilliHz: mHz })}
-            className="w-full max-w-56"
+            className={`${decimals > 4 ? 'w-40' : 'w-32'} shrink-0`}
           />
-          <div className="font-mono text-[11px] text-muted">
-            Prawe ucho: {formatHz(wave.carrierMilliHz + wave.beatMilliHz, decimals)} Hz
-          </div>
         </div>
-      </div>
+        <BandSlider hz={beat} onChange={(hz) => set({ beatMilliHz: hz * 1000 })} />
+        <div className="flex justify-between font-mono text-[11px] text-muted">
+          <span>L {formatHz(wave.carrierMilliHz, decimals)} Hz</span>
+          <span>P {formatHz(wave.carrierMilliHz + wave.beatMilliHz, decimals)} Hz</span>
+        </div>
+      </section>
 
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="mr-1 text-[11px] text-muted">Pasmo:</span>
@@ -269,8 +269,12 @@ function WaveList() {
                   }}
                 />
               </div>
-              <div onClick={(e) => e.stopPropagation()}>
-                <Slider label={`Głośność ${w.name}`} value={w.volume} onChange={(v) => update(w.id, { volume: v })} />
+              <div onClick={(e) => e.stopPropagation()} className="space-y-1">
+                <BandSlider compact hz={w.beatMilliHz / 1000} onChange={(hz) => update(w.id, { beatMilliHz: hz * 1000 })} label={`Fala mózgowa ${w.name}`} />
+                <div className="flex items-center gap-2">
+                  <Icon name="volume" className="size-3.5 shrink-0 text-muted" />
+                  <Slider label={`Głośność ${w.name}`} value={w.volume} onChange={(v) => update(w.id, { volume: v })} className="flex-1" />
+                </div>
               </div>
             </li>
           )

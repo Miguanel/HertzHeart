@@ -1,4 +1,4 @@
-# HeartzHeart – architektura (wersja poprawiona)
+# Hertz Hearth (Herce Serca) – architektura (wersja poprawiona)
 
 Sekwencer częstotliwości w przeglądarce: biblioteka częstotliwości (dokładność 0,001 Hz), projekty złożone ze ścieżek i segmentów czasowych z obwiednią głośności, zapis lokalny (telefon/komputer), udostępnianie projektów, wdrożenie jako Web Service na Render.com.
 
@@ -271,3 +271,12 @@ Render: jeden Web Service z Dockerfile + Render Postgres (`DATABASE_URL`).
 - Jawna informacja: komunikat po dodaniu ścieżki / zmianie częstotliwości (dla pary L/P – dudnienie), ikona mózgu przy ścieżce, pasek „Fale mózgowe” nad osią czasu (dudnienia + CFC), pełny opis w zakładce binauralnej. Zawsze z zastrzeżeniem, że opisy dotyczą oscylacji EEG, a nie skutków słuchania.
 
 **Ustawienia** (ikona zębatki): czas bufora, łagodny transport, liczba miejsc po przecinku, informowanie o pasmach; status generatora (64-bit / float32).
+
+---
+
+## 10. Hertz Hearth – Herce Serca (nowa nazwa), suwaki pasm, schemat mózgu
+
+- **Nazwa**: w interfejsie, tytule strony, manifeście PWA, panelu admina i README aplikacja nazywa się „Hertz Hearth – Herce Serca”. Wewnętrzne klucze (`heartzheart:*` w localStorage, baza IndexedDB `heartzheart`, rozszerzenie `.heartz.json`, nazwa usługi w `render.yaml`) zostały celowo bez zmian – zmiana skasowałaby zapisane projekty użytkowników albo utworzyła nowy serwis na Render.
+- **Suwaki zamiast pokręteł** w zakładce binauralnej: nośna = suwak w skali log (20–1500 Hz) + pole liczbowe.
+- **`BandSlider`** (`components/BandSlider.tsx`): suwak fali mózgowej działa w obrębie jednego pasma z tabeli (`BRAIN_BANDS`, skala log w paśmie). Przytrzymanie kciuka na granicy przez 0,7 s (`HOLD_MS`) przenosi skalę do sąsiedniego pasma z animacją 450 ms; kciuk zostaje na częstotliwości granicznej, a dalszy ruch jest liczony względnie (granica „uzbraja się” ponownie po ruchu o 10 px – trzymanie bez ruchu nie przeskakuje kolejnych pasm). W drugą stronę tak samo. Dodatkowo: strzałki ◂ ▸, klawiatura (PageUp/PageDown), pasek wszystkich pasm do kliknięcia. Wersja `compact` przy każdej fali na liście „Moje fale”. Zweryfikowane w przeglądarce (Playwright).
+- **`BrainMap`** (`components/BrainMap.tsx`, `data/brainRegions.ts`): schematyczny widok mózgu z boku (przód–tył poziomo) z przełącznikiem obrotu (przód u góry). Płaty i pasy kory wypełnione kolorem pasma, struktury głębokie (wzgórze, hipokamp, ciało migdałowate, zwoje podstawy, ACC, DMN…) rysowane przerywaną linią. Każde pasmo, zjawisko i sprzężenie CFC w `data/brainwaves.ts` ma pole `regions`.

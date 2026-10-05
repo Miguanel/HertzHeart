@@ -5,6 +5,7 @@ import type { Track } from '../model/schema'
 import { useProjectStore } from '../store/projectStore'
 import { useSettings } from '../store/settings'
 import { useUi } from '../store/uiStore'
+import { BrainMap } from './BrainMap'
 import { Icon } from './icons'
 import { Badge } from './InfoContent'
 import { Sheet } from './ui'
@@ -45,8 +46,16 @@ export function BrainInfoView({ hz, compact = false }: { hz: number; compact?: b
     )
   }
   const { band, phenomena } = match
+  const phenRegions = [...new Set(phenomena.flatMap((p) => p.regions))].filter((r) => !band?.regions.includes(r))
   return (
     <div className="space-y-3">
+      <BrainMap
+        size={compact ? 'sm' : 'md'}
+        highlights={[
+          ...(band ? [{ regions: band.regions, color: band.color, label: band.name }] : []),
+          ...(phenRegions.length ? [{ regions: phenRegions, color: '#c86bff', label: 'zjawiska' }] : []),
+        ]}
+      />
       {band && (
         <div className={`space-y-3 rounded-xl border p-3 ${toneBorder(band.tone)}`}>
           <div className="flex flex-wrap items-center gap-2">
@@ -91,7 +100,8 @@ export function CouplingCard({ match, decimals, compact = false }: { match: Coup
         ))}
       </div>
       <Field label="Odczuwany stan / zastosowanie">{c.states}</Field>
-      {!compact && <Field label="Obszary i płaszczyzny">{c.areas}</Field>}
+      <Field label="Obszary i płaszczyzny">{c.areas}</Field>
+      <BrainMap size="sm" highlights={[{ regions: c.regions, color: c.tone === 'warn' ? '#ffb547' : '#c86bff' }]} />
       {!compact && <Field label="Mechanizm działania">{c.mechanism}</Field>}
     </div>
   )
