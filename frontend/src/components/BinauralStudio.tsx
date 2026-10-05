@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
+import { listProjects } from '../db/db'
+import { useSaveStatus } from '../store/autosave'
 import { engine } from '../audio/engine'
-import { QUICK_BANDS, detectCouplings, matchFrequency } from '../data/brainwaves'
+import { BRAIN_BANDS, QUICK_BANDS, bandLabel, bandRange, detectCouplings, matchFrequency } from '../data/brainwaves'
 import { createBinauralPair } from '../model/envelope'
 import { formatHz } from '../model/frequency'
 import { BEAT_MAX, BEAT_MIN, CARRIER_MAX, CARRIER_MIN, useBinaural, type BinauralWave } from '../store/binauralStore'
 import { useProjectStore } from '../store/projectStore'
 import { useSettings } from '../store/settings'
 import { useUi } from '../store/uiStore'
-import { BrainInfoView, CouplingCard, Disclaimer } from './Brainwaves'
+import { BrainInfoView, CouplingCard, Disclaimer, projectBeats } from './Brainwaves'
 import { Icon } from './icons'
-import { BandSlider } from './BandSlider'
+import { BandSlider, bandIndexOf, type FrequencyMarker } from './BandSlider'
+import { QuickLaunch } from './QuickLaunch'
 import { Button, FrequencyField, IconButton, NumberField, Panel, Slider } from './ui'
 
 /** Łączy listę grających fal z silnikiem audio – działa także po przełączeniu na sekwencer. */
@@ -22,6 +25,43 @@ export function useBinauralPlayback() {
       active.map((w) => ({ id: w.id, carrierMilliHz: w.carrierMilliHz, beatMilliHz: w.beatMilliHz, volume: w.volume })),
     )
   }, [waves, playing])
+}
+
+/**
+ * Częstotliwości fal mózgowych zapisane gdzie indziej: inne fale z listy, dudnienia w bieżącym projekcie
+ * i w projektach zapisanych na urządzeniu. Pokazywane jako znaczniki na suwaku pasma.
+ */
+function useSavedMarkers(excludeId?: string): FrequencyMarker[] {
+  const waves = useBinaural((s) => s.waves)
+  const tracks = useProjectStore((s) => s.composition.tracks)
+  const saveStatus = useSaveStatus((s) => s.status)
+  const [stored, setStored] = useState<FrequencyMarker[]>([])
+  useEffect(() => {
+    let alive = true
+    listProjects()
+      .then((list) => {
+        if (!alive) return
+        setStored(list.flatMap((p) => projectBeats(p.data.tracks ?? []).map((b) => ({ hz: b.hz, label: `Projekt „${p.title}”` }))))
+      })
+      .catch(() => undefined)
+    return () => {
+      alive = false
+    }
+  }, [saveStatus])
+  return useMemo(() => {
+    const all: FrequencyMarker[] = [
+      ...waves.filter((w) => w.id !== excludeId).map((w) => ({ hz: w.beatMilliHz / 1000, label: `Fala „${w.name}”` })),
+      ...projectBeats(tracks).map((b) => ({ hz: b.hz, label: `Bieżący projekt („${b.name}”)` })),
+      ...stored,
+    ]
+    const seen = new Set<string>()
+    return all.filter((m) => {
+      const k = m.hz.toFixed(7)
+      if (seen.has(k)) return false
+      seen.add(k)
+      return true
+    })
+  }, [waves, tracks, stored, excludeId])
 }
 
 const logNorm = (v: number, min: number, max: number) => Math.log(v / min) / Math.log(max / min)
@@ -41,6 +81,8 @@ function Generator({ wave }: { wave: BinauralWave }) {
   const showNotice = useUi((s) => s.showNotice)
   const [minutes, setMinutes] = useState(5)
   const [name, setName] = useState<string | null>(null)
+  const simple = useSettings((s) => s.simpleMode)
+  const markers = useSavedMarkers(wave.id)
 
   const carrier = wave.carrierMilliHz / 1000
   const beat = wave.beatMilliHz / 1000
@@ -118,7 +160,7 @@ function Generator({ wave }: { wave: BinauralWave }) {
             className={`${decimals > 4 ? 'w-40' : 'w-32'} shrink-0`}
           />
         </div>
-        <BandSlider hz={beat} onChange={(hz) => set({ beatMilliHz: hz * 1000 })} />
+        <BandSlider hz={beat} onChange={(hz) => set({ beatMilliHz: hz * 1000 })} markers={markers} />
         <div className="flex justify-between font-mono text-[11px] text-muted">
           <span>L {formatHz(wave.carrierMilliHz, decimals)} Hz</span>
           <span>P {formatHz(wave.carrierMilliHz + wave.beatMilliHz, decimals)} Hz</span>
@@ -171,6 +213,7 @@ function Generator({ wave }: { wave: BinauralWave }) {
         </Button>
       </div>
 
+      {!simple && (
       <div className="space-y-3 border-t border-line/60 pt-4">
         <h3 className="flex items-center gap-2 font-display text-[11px] uppercase tracking-[0.2em] text-plasma">
           <Icon name="brain" className="size-4" /> {formatHz(wave.beatMilliHz, decimals)} Hz – pasmo fal mózgowych
@@ -178,6 +221,7 @@ function Generator({ wave }: { wave: BinauralWave }) {
         <BrainInfoView hz={beat} />
         <Disclaimer />
       </div>
+      )}
     </div>
   )
 }
@@ -190,6 +234,8 @@ function WaveList() {
   const decimals = useSettings((s) => s.decimals)
   const masterVolume = useProjectStore((s) => s.composition.masterVolume)
   const setMasterVolume = useProjectStore((s) => s.setMasterVolume)
+  const simple = useSettings((s) => s.simpleMode)
+  const markers = useSavedMarkers()
 
   const couplings = useMemo(
     () => detectCouplings(waves.filter((w) => playing.includes(w.id)).map((w) => w.beatMilliHz / 1000)),
@@ -214,7 +260,10 @@ function WaveList() {
           <button
             key={b.id}
             type="button"
-            onClick={() => add({ name: `${b.label} ${b.center} Hz`, beatMilliHz: b.center * 1000 })}
+            onClick={() => {
+              const band = BRAIN_BANDS[bandIndexOf(b.center)]
+              add({ name: `${b.label} ${b.center} Hz · ${band.name} ${bandRange(band)}`, beatMilliHz: b.center * 1000 })
+            }}
             className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-[11px] text-muted hover:text-slate-100"
           >
             <span className="size-1.5 rounded-full" style={{ background: b.color }} />
@@ -246,7 +295,7 @@ function WaveList() {
                   <div className="truncate font-mono text-[11px] text-muted">
                     {formatHz(w.carrierMilliHz, Math.min(decimals, 3))} Hz · Δ{' '}
                     <span className="text-plasma">{formatHz(w.beatMilliHz, decimals)} Hz</span>
-                    {band && ` · ${band.name}`}
+                    {band && ` · ${bandLabel(band)}`}
                   </div>
                 </div>
                 <IconButton
@@ -270,7 +319,7 @@ function WaveList() {
                 />
               </div>
               <div onClick={(e) => e.stopPropagation()} className="space-y-1">
-                <BandSlider compact hz={w.beatMilliHz / 1000} onChange={(hz) => update(w.id, { beatMilliHz: hz * 1000 })} label={`Fala mózgowa ${w.name}`} />
+                <BandSlider compact hz={w.beatMilliHz / 1000} onChange={(hz) => update(w.id, { beatMilliHz: hz * 1000 })} label={`Fala mózgowa ${w.name}`} markers={markers.filter((m) => m.label !== `Fala „${w.name}”`)} />
                 <div className="flex items-center gap-2">
                   <Icon name="volume" className="size-3.5 shrink-0 text-muted" />
                   <Slider label={`Głośność ${w.name}`} value={w.volume} onChange={(v) => update(w.id, { volume: v })} className="flex-1" />
@@ -282,7 +331,7 @@ function WaveList() {
         {!waves.length && <li className="p-6 text-center text-sm text-muted">Brak fal. Dodaj pierwszą przyciskiem +.</li>}
       </ul>
 
-      {couplings.length > 0 && (
+      {!simple && couplings.length > 0 && (
         <div className="max-h-[40%] space-y-2 overflow-y-auto border-t border-line/60 p-3">
           <div className="font-display text-[10px] uppercase tracking-[0.18em] text-plasma">Sprzężenia CFC grających fal</div>
           {couplings.map((c) => (
@@ -300,17 +349,37 @@ function WaveList() {
   )
 }
 
+function SimpleToggle() {
+  const simple = useSettings((s) => s.simpleMode)
+  const setSimple = useSettings((s) => s.setSimpleMode)
+  return (
+    <button
+      type="button"
+      onClick={() => setSimple(!simple)}
+      aria-pressed={simple}
+      title="Tryb prosty: bez opisów, szybkie uruchamianie projektów"
+      className={`rounded-full border px-2.5 py-1 text-[10px] normal-case tracking-normal transition-colors ${
+        simple ? 'border-neon/60 bg-neon/15 text-neon' : 'border-line text-muted hover:text-slate-100'
+      }`}
+    >
+      {simple ? '✓ Tryb prosty' : 'Tryb prosty'}
+    </button>
+  )
+}
+
 export function BinauralStudio() {
   const wave = useBinaural((s) => s.waves.find((w) => w.id === s.selectedId) ?? null)
   const add = useBinaural((s) => s.add)
+  const simple = useSettings((s) => s.simpleMode)
   return (
     <div className="grid min-h-0 w-full flex-1 gap-3 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_360px] lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_400px]">
       <Panel
         title={
           <span className="flex items-center gap-2">
-            <Icon name="headphones" className="size-4 text-warn" /> Generator binauralny · słuchawki wymagane
+            <Icon name="headphones" className="size-4 text-warn" /> {simple ? 'Fale binauralne' : 'Generator binauralny · słuchawki wymagane'}
           </span>
         }
+        actions={<SimpleToggle />}
         className="lg:min-h-0"
         bodyClassName="lg:overflow-y-auto"
       >
@@ -325,7 +394,10 @@ export function BinauralStudio() {
           </div>
         )}
       </Panel>
-      <WaveList />
+      <div className={`flex min-h-0 flex-col gap-3 lg:overflow-y-auto ${simple ? 'order-first lg:order-none' : ''}`}>
+        <QuickLaunch simple={simple} />
+        <WaveList />
+      </div>
     </div>
   )
 }

@@ -16,10 +16,16 @@ export interface SettingsState {
   smoothTransport: boolean
   /** Informowanie o pasmach fal mózgowych przy wpisywaniu częstotliwości. */
   brainwaveNotices: boolean
+  /** Tryb prosty: bez opisów i analiz – szybkie uruchamianie projektów i fal. */
+  simpleMode: boolean
+  /** Czy rysunek mózgu jest rozwinięty (zapamiętane między oknami). */
+  brainMapOpen: boolean
   setDecimals: (decimals: number) => void
   setSmoothing: (seconds: number) => void
   setSmoothTransport: (on: boolean) => void
   setBrainwaveNotices: (on: boolean) => void
+  setSimpleMode: (on: boolean) => void
+  setBrainMapOpen: (open: boolean) => void
 }
 
 /** localStorage bywa niedostępny (tryb prywatny) – wtedy ustawienia żyją tylko w pamięci. */
@@ -54,10 +60,14 @@ export const useSettings = create<SettingsState>()(
       smoothing: 1,
       smoothTransport: true,
       brainwaveNotices: true,
+      simpleMode: false,
+      brainMapOpen: false,
       setDecimals: (decimals) => set({ decimals: clamp(Math.round(decimals), 0, MAX_DECIMALS) }),
       setSmoothing: (seconds) => set({ smoothing: clamp(seconds, MIN_SMOOTHING_S, MAX_SMOOTHING_S) }),
       setSmoothTransport: (smoothTransport) => set({ smoothTransport }),
       setBrainwaveNotices: (brainwaveNotices) => set({ brainwaveNotices }),
+      setSimpleMode: (simpleMode) => set({ simpleMode }),
+      setBrainMapOpen: (brainMapOpen) => set({ brainMapOpen }),
     }),
     { name: 'heartzheart:settings', version: 1, storage: createJSONStorage(() => safeStorage) },
   ),

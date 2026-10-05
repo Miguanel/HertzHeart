@@ -61,7 +61,7 @@ export function BrainInfoView({ hz, compact = false }: { hz: number; compact?: b
           <div className="flex flex-wrap items-center gap-2">
             <span className="size-2.5 rounded-full" style={{ background: band.color, boxShadow: `0 0 10px ${band.color}` }} />
             <span className="font-medium text-slate-100">{band.name}</span>
-            <Badge>{fmtRange(band.min, band.max)}</Badge>
+            <Badge tone="neon">zakres {fmtRange(band.min, band.max)}</Badge>
             {band.tone === 'warn' && <Badge tone="warn">⚠ stan niepożądany / kliniczny</Badge>}
           </div>
           <Field label="Odczuwane stany / efekty">{band.states}</Field>
@@ -110,8 +110,9 @@ export function CouplingCard({ match, decimals, compact = false }: { match: Coup
 /** Mały przycisk z kolorem pasma – otwiera opis. */
 export function BrainBadge({ hz, source, className = '' }: { hz: number; source: string; className?: string }) {
   const show = useUi((s) => s.showBrainInfo)
+  const simple = useSettings((s) => s.simpleMode)
   const match = matchFrequency(hz)
-  if (!hasBrainMatch(match)) return null
+  if (simple || !hasBrainMatch(match)) return null
   const color = match.band?.color ?? '#c86bff'
   const warn = match.band?.tone === 'warn' || match.phenomena.some((p) => p.tone === 'warn')
   const label = `Fale mózgowe: ${match.band?.name ?? match.phenomena[0].name}`
@@ -198,7 +199,7 @@ export function ProjectBrainStrip() {
               className="inline-flex items-center gap-1.5 rounded-full border border-line px-2.5 py-1 text-[11px] text-slate-200 hover:border-plasma/60"
             >
               <span className="size-2 rounded-full" style={{ background: m.band?.color ?? '#7d8bab' }} />
-              🎧 {formatHz(b.hz * 1000, Math.min(decimals, 3))} Hz · {m.band?.name ?? 'poza tabelą'}
+              🎧 {formatHz(b.hz * 1000, Math.min(decimals, 3))} Hz · {m.band ? `${m.band.name} (${fmtRange(m.band.min, m.band.max)})` : 'poza tabelą'}
             </button>
           )
         })}
@@ -230,7 +231,7 @@ export function ProjectBrainStrip() {
  */
 export function useBrainwaveNotices() {
   const comp = useProjectStore((s) => s.composition)
-  const enabled = useSettings((s) => s.brainwaveNotices)
+  const enabled = useSettings((s) => s.brainwaveNotices && !s.simpleMode)
   const decimals = useSettings((s) => s.decimals)
   const prev = useRef<{ id: string; freqs: Map<string, number> } | null>(null)
 

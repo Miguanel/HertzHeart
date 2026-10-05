@@ -42,6 +42,15 @@ export function SettingsPanel() {
 
   return (
     <div className="space-y-4">
+      <Section title="Tryb pracy">
+        <Toggle
+          checked={s.simpleMode}
+          onChange={s.setSimpleMode}
+          label="Tryb prosty"
+          hint="Wersja okrojona z opisów i analiz (fale mózgowe, CFC, komunikaty). W zakładce Binauralne na wierzchu jest „Szybkie uruchamianie”: projekty zapisane na urządzeniu uruchamiasz jednym dotknięciem, zapisujesz fale jako projekt i kopię pliku na telefonie."
+        />
+      </Section>
+
       <Section title="Bufor łagodzący zmiany">
         <p className="text-xs leading-relaxed text-muted">
           Każda zmiana w trakcie odtwarzania (częstotliwość, głośność, kanał, diagram, wyciszenie, dodanie lub usunięcie ścieżki,

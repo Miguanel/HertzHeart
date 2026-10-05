@@ -65,3 +65,22 @@ export function safeFilename(title: string) {
 export function compositionToFile(comp: Composition): File {
   return new File([JSON.stringify(comp, null, 2)], `${safeFilename(comp.title)}.heartz.json`, { type: 'application/json' })
 }
+
+/**
+ * Zapis projektu na urządzeniu: na telefonie otwiera systemowe okno „Udostępnij / Zapisz w plikach”,
+ * na komputerze pobiera plik `.heartz.json`.
+ */
+export async function saveCompositionToDevice(comp: Composition): Promise<'shared' | 'downloaded' | 'cancelled'> {
+  const file = compositionToFile(comp)
+  if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: comp.title })
+      return 'shared'
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return 'cancelled'
+      // inne błędy (np. brak uprawnień) – spróbuj zwykłego pobrania
+    }
+  }
+  downloadBlob(file, file.name)
+  return 'downloaded'
+}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BRAIN_REGIONS, type BrainRegionId } from '../data/brainRegions'
+import { useSettings } from '../store/settings'
 
 export interface BrainHighlight {
   regions: readonly BrainRegionId[]
@@ -68,14 +69,40 @@ function regionShape(id: BrainRegionId, color: string, opacity: number) {
  */
 export function BrainMap({ highlights, size = 'md' }: { highlights: BrainHighlight[]; size?: 'sm' | 'md' }) {
   const [vertical, setVertical] = useState(false)
+  const open = useSettings((s) => s.brainMapOpen)
+  const setOpen = useSettings((s) => s.setBrainMapOpen)
   const all = highlights.filter((h) => h.regions.length)
   if (!all.length) return null
   const ids = [...new Set(all.flatMap((h) => h.regions))]
+  const names = ids.map((id) => BRAIN_REGIONS[id].name)
+
+  // Opcjonalny, zwijany obszar – stan zapamiętany w ustawieniach (wspólny dla wszystkich opisów).
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-expanded={false}
+        className="flex w-full items-center gap-2 rounded-xl border border-line/70 bg-black/20 px-3 py-2 text-left transition-colors hover:border-plasma/50"
+      >
+        <span className="font-display text-[10px] uppercase tracking-[0.18em] text-muted">Obszar mózgu</span>
+        <span className="min-w-0 flex-1 truncate text-[11px] text-slate-300">{names.join(', ')}</span>
+        <span className="shrink-0 text-[11px] text-plasma">pokaż rysunek ▾</span>
+      </button>
+    )
+  }
 
   return (
     <figure className="space-y-2 rounded-xl border border-line/70 bg-black/25 p-3">
       <div className="flex items-center justify-between gap-2">
-        <figcaption className="font-display text-[10px] uppercase tracking-[0.18em] text-muted">Obszar mózgu</figcaption>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-expanded
+          className="font-display text-[10px] uppercase tracking-[0.18em] text-muted hover:text-slate-100"
+        >
+          Obszar mózgu ▴
+        </button>
         <button
           type="button"
           onClick={() => setVertical(!vertical)}
@@ -90,7 +117,7 @@ export function BrainMap({ highlights, size = 'md' }: { highlights: BrainHighlig
           viewBox={vertical ? '0 0 230 330' : '0 0 330 230'}
           className="w-full"
           role="img"
-          aria-label={`Schemat mózgu: ${ids.map((id) => BRAIN_REGIONS[id].name).join(', ')}`}
+          aria-label={`Schemat mózgu: ${names.join(', ')}`}
         >
           <defs>
             <clipPath id="hh-cerebrum">

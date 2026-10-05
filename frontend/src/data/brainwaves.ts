@@ -79,7 +79,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['dmn', 'brainstem', 'hypothalamus'],
     notes:
       'Raporty laboratoryjne: ściśle korelują z sygnałem BOLD w rezonansie fMRI. Używane w specjalistycznym neurofeedbacku (ILF) do leczenia traumy (PTSD) i stabilizacji autonomicznego układu nerwowego.',
-    color: C.isf,
+    color: '#6b6bff',
     tone: 'neutral',
   },
   {
@@ -93,7 +93,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['cortex'],
     notes:
       'Zjawisko kluczowe dla tzw. homeostazy synaptycznej. Podczas tej częstotliwości mózg „usuwa” zbędne połączenia synaptyczne zebrane w ciągu dnia, robiąc miejsce na nową wiedzę.',
-    color: C.slow,
+    color: '#9b6bff',
     tone: 'neutral',
   },
   {
@@ -106,7 +106,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['thalamus', 'cortex'],
     notes:
       'Medycyna: główny wskaźnik prawidłowego wydzielania hormonu wzrostu (HGH). Jeśli fali tej brakuje, pacjenci zgłaszają przewlekłe zmęczenie (np. w fibromialgii).',
-    color: C.delta,
+    color: '#c86bff',
     tone: 'neutral',
   },
   {
@@ -119,7 +119,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['basalGanglia', 'thalamus', 'hippocampus'],
     notes:
       'U dorosłych w stanie czuwania obecność tej fali to patologia (często marker guzów mózgu, demencji lub urazów TBI). U niemowląt to stan domyślny.',
-    color: C.delta,
+    color: '#f06bdc',
     tone: 'warn',
   },
   {
@@ -133,7 +133,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['hippocampus', 'amygdala'],
     notes:
       'Wiąże się z konsolidacją pamięci epizodycznej. Nadmiar tej fali w stanie czuwania (tzw. „spowolnienie limbiczne”) występuje u osób z depresją i ciężkim ADHD.',
-    color: C.theta,
+    color: '#4d8bff',
     tone: 'neutral',
   },
   {
@@ -146,7 +146,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['acc', 'mpfc'],
     notes:
       'Badania: Fm-Theta (Frontal Midline Theta) rośnie proporcjonalnie do obciążenia pamięci roboczej. Jest dowodem na to, że mózg intensywnie przeszukuje zasoby wewnętrzne.',
-    color: C.theta,
+    color: '#22c8ff',
     tone: 'neutral',
   },
   {
@@ -159,7 +159,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['occipital', 'parietal'],
     notes:
       '„Most” między podświadomością a świadomością. Trening tej fali często wykorzystuje się u pacjentów z wypaleniem zawodowym w celu redukcji stresu.',
-    color: C.alpha,
+    color: '#22e4c0',
     tone: 'neutral',
   },
   {
@@ -172,7 +172,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['motor', 'sensory'],
     notes:
       'Rytm Mu tłumi się natychmiast, gdy wykonamy ruch lub… gdy widzimy, jak ktoś inny go wykonuje. Jest powiązany z działaniem neuronów lustrzanych (empatia, uczenie się przez naśladownictwo).',
-    color: C.alpha,
+    color: '#4dff88',
     tone: 'neutral',
   },
   {
@@ -185,7 +185,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['motor', 'sensory', 'reticular'],
     notes:
       'Raporty medyczne: zwiększanie amplitudy SMR zapobiega napadom padaczkowym (podnosi próg drgawkowy) i radykalnie zmniejsza nadpobudliwość ruchową u dzieci z ADHD.',
-    color: C.beta,
+    color: '#b4ff5a',
     tone: 'neutral',
   },
   {
@@ -197,7 +197,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     area: 'Kora przedczołowa, płaty czołowe.',
     regions: ['prefrontal', 'frontal'],
     notes: 'Optymalne pasmo do pracy intelektualnej. Niedobór w płatach czołowych skutkuje prokrastynacją i „mgłą mózgową”.',
-    color: C.beta,
+    color: '#f5e65a',
     tone: 'neutral',
   },
   {
@@ -210,7 +210,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['amygdala', 'cortex'],
     notes:
       'Klinicznie: chroniczne utrzymywanie się tej fali to marker zaburzeń lękowych (nerwicy), bezsenności i natręctw (OCD). Mózg traci ogromne ilości glukozy.',
-    color: C.beta,
+    color: '#ffb547',
     tone: 'warn',
   },
   {
@@ -224,7 +224,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['cortex', 'thalamus'],
     notes:
       'Badania lab.: stymulacja światłem i dźwiękiem o częstotliwości 40 Hz pomaga usuwać blaszki amyloidowe w chorobie Alzheimera u myszy laboratoryjnych (aktywacja mikrogleju).',
-    color: C.gamma,
+    color: '#ff8a3d',
     tone: 'neutral',
   },
   {
@@ -238,7 +238,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['prefrontal', 'amygdala', 'hippocampus'],
     notes:
       'Bardzo rzadko rejestrowana trwale u przeciętnego człowieka (pojawia się we fleszach). Wymaga niezwykle wysokiego zestrojenia metabolicznego mózgu.',
-    color: C.gamma,
+    color: '#ff5555',
     tone: 'neutral',
   },
   {
@@ -251,7 +251,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['hippocampus', 'temporal'],
     notes:
       'Neurologia kliniczna: „Ripples” to paczki ultrakrótkich impulsów, podczas których mózg w ułamku sekundy przegrywa wspomnienia z całego dnia z hipokampa do kory czołowej – na „twardy dysk” pamięci długotrwałej.',
-    color: C.hfo,
+    color: '#ff6bc8',
     tone: 'neutral',
   },
   {
@@ -264,7 +264,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['hippocampus', 'temporal'],
     notes:
       'Zastosowanie medyczne: zapisywane wyłącznie z elektrod wszczepionych do mózgu (iEEG). Klinicyści używają tego pasma jako „radaru” do precyzyjnego lokalizowania i operacyjnego usuwania ognisk padaczkowych.',
-    color: C.hfo,
+    color: '#8fa0ff',
     tone: 'warn',
   },
   {
@@ -277,7 +277,7 @@ export const BRAIN_BANDS: BrainBand[] = [
     regions: ['sensory'],
     notes:
       'Powyżej 500 Hz wchodzimy w zakres MUA (Multi-Unit Activity). To częstotliwość wystrzałów pojedynczych neuronów (iglice – action potentials). Nie jest to rytm całego mózgu, lecz „język maszynowy” pojedynczych komórek.',
-    color: C.hfo,
+    color: '#d0d8e8',
     tone: 'neutral',
   },
 ]
@@ -581,6 +581,12 @@ export function detectCouplings(frequencies: number[]): CouplingMatch[] {
   }
   return out
 }
+
+const fmtNum = (hz: number) => String(Number(hz.toPrecision(4))).replace('.', ',')
+/** „0,5–2 Hz” – zakres pasma do etykiet. */
+export const bandRange = (b: Pick<BrainBand, 'min' | 'max'>) => `${fmtNum(b.min)}–${fmtNum(b.max)} Hz`
+/** Nazwa pasma z zakresem, np. „Szybka Theta (Fm-Theta) · 6–8 Hz”. */
+export const bandLabel = (b: BrainBand) => `${b.name} · ${bandRange(b)}`
 
 /** Kolor pasma dla częstotliwości (do kropek i wskaźników). */
 export const bandColor = (hz: number) => matchFrequency(hz).band?.color ?? '#7d8bab'

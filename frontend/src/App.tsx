@@ -20,6 +20,7 @@ import type { Composition, LibraryFrequency } from './model/schema'
 import { clearShareFromLocation, decodeComposition, downloadBlob, readShareFromLocation, safeFilename } from './share/codec'
 import { startAutosave } from './store/autosave'
 import { useProjectStore } from './store/projectStore'
+import { useSettings } from './store/settings'
 import { openComposition, usePlaybackController } from './store/session'
 import { useUi, type MobileView } from './store/uiStore'
 import { Tour } from './tour/Tour'
@@ -53,6 +54,7 @@ export default function App() {
   const [libraryLoading, setLibraryLoading] = useState(true)
   const [offline, setOffline] = useState(false)
   const { view, setView, sheet, setSheet, mode, setMode } = useUi()
+  const simpleMode = useSettings((s) => s.simpleMode)
   const [toast, setToast] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
 
@@ -148,7 +150,7 @@ export default function App() {
           />
         </aside>
         <section className={`${view === 'editor' ? 'flex' : 'hidden'} min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto lg:flex`}>
-          <ProjectBrainStrip />
+          {!simpleMode && <ProjectBrainStrip />}
           <Timeline onOpenLibrary={() => setView('library')} />
           <ClipInspector />
         </section>
