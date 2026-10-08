@@ -292,3 +292,29 @@ Render: jeden Web Service z Dockerfile + Render Postgres (`DATABASE_URL`).
 - **Tryb prosty** (`settings.simpleMode`, przełącznik w Ustawieniach i w nagłówku zakładki Binauralne): ukrywa opisy fal mózgowych, CFC, ikony mózgu przy ścieżkach, pasek nad osią czasu i komunikaty o pasmach. Panel „Szybkie uruchamianie” jest wtedy rozwinięty i na górze.
 - **`QuickLaunch`** (`components/QuickLaunch.tsx`): bieżący projekt z play/pauza/stop; lista projektów zapisanych lokalnie z odtwarzaniem od początku jednym dotknięciem (bieżący projekt jest najpierw zapisywany), otwarciem w edytorze i zapisem na telefonie; „Zapisz fale jako projekt” (grające fale albo wybrana → pary L/P, zapis w IndexedDB bez zmiany bieżącego projektu); wczytanie pliku `.heartz.json`; przycisk instalacji PWA (`store/pwaInstall.ts`, `beforeinstallprompt`) lub instrukcja dla iPhone'a.
 - **Zapis na telefonie** (`saveCompositionToDevice` w `share/codec.ts`): Web Share API z plikiem (systemowe „Zapisz w plikach / Udostępnij”), a gdy niedostępne – zwykłe pobranie pliku.
+
+---
+
+## 12. Warstwy fal binauralnych, chowanie rysunku
+
+- **Warstwy w generatorze** (`binauralStore.stack`, `stackOf()`, `addLayer`, `removeLayer`, `playStack`, `stopStack`): generator pokazuje stos fal edytowanych razem. Przycisk „＋ Dodaj kolejną falę binauralną” tworzy nową warstwę: następne pasmo fal mózgowych (do ok. 100 Hz, potem poprzednie) i nośna przesunięta o +40 Hz (lub −40 Hz powyżej 1000 Hz). Każda warstwa (`LayerCard`) ma własny suwak nośnej, szybki wybór nośnej (100, 136,1, 200, 250, 300, 432, 528 Hz + nośne innych fal), suwak pasma, głośność i przycisk odtwarzania. „Odtwórz wszystkie / Zatrzymaj warstwy” steruje całym stosem; „Dodaj warstwy do projektu” tworzy pary L/P dla każdej warstwy. Usunięcie warstwy (✕) zostawia falę na liście „Moje fale”. Wybór fali z listy pokazuje ją jako jedyną warstwę (o ile nie należy już do stosu). Starsze zapisy bez `stack` działają (warstwą jest wybrana fala).
+- **Rysunek mózgu**: w rozwiniętym widoku jest przycisk „Schowaj rysunek ✕”.
+
+---
+
+## 13. Delikatne wygaszanie i pasek „Teraz gra”
+
+- **Wygaszanie** (`fadeOut` w `audio/osc.ts`): stop, pauza, wyłączenie fali binauralnej, zatrzymanie odsłuchu i usunięcie ścieżki w trakcie gry nie są już liniową rampą, tylko krzywą `setValueCurveAtTime`: miękki początek, potem spadek równomierny w decybelach do ok. −50 dB i łagodne domknięcie do zera. Czas ustawia `settings.stopFade` (domyślnie 2 s, zakres 0,2–8 s, suwak w Ustawieniach); `stopFadeTime()` zwraca go, gdy „łagodny transport” jest włączony. Zweryfikowane renderowaniem offline: brak skoków między próbkami (maks. ~2e-5).
+- Silnik udostępnia stan dla UI: `fadingBinaural` (fale w trakcie wygaszania), `projectFading`, `previewInfo` (nazwa i częstotliwość odsłuchu z biblioteki).
+- **`PlayingDock`** (`components/PlayingDock.tsx`), stały pasek na dole ekranu nad transportem/nawigacją: każde aktywne źródło dźwięku (fale binauralne, projekt w zakładce Binauralne, odsłuch z biblioteki) z jednym przyciskiem stop/wznów, nazwą, częstotliwością nośnej i dudnienia, pasmem z zakresem i pierwszym zdaniem opisu pasma z bazy fal mózgowych (w trybie prostym bez opisu). W trakcie wygaszania pozycja pokazuje „wygaszanie…” i można ją włączyć ponownie. Kliknięcie fali przechodzi do niej w zakładce Binauralne. Przy kilku źródłach – „Zatrzymaj wszystko” (z wygaszeniem).
+- Komunikaty (`NoticeBar`) przeniesione na górę ekranu, żeby nie zasłaniały paska.
+
+---
+
+## 14. Responsywność (sprawdzone zrzutami 360×740 … 1920×1080, także telefon poziomo)
+
+- **Wariant `short`** (`@custom-variant short (@media (max-height: 540px))` w `index.css`) dla telefonu w poziomie i niskich okien: dolna nawigacja znika, jej ikony trafiają do nagłówka (`CompactNav` w `TopBar.tsx`); pasek „Teraz gra” i transport stoją obok siebie w jednym kompaktowym wierszu; mniejsze odstępy, ukryty podpis logo, status zapisu i opis pasma w pasku; głośność główna jako przycisk z wysuwanym suwakiem.
+- **Zakładka Binauralne na telefonie/tablecie pionowo**: zamiast siatki z `min-h-0` (panele nachodziły na siebie i wychodziły poza ekran) – zwykła kolumna przewijana w pionie; siatka 2-kolumnowa dopiero od `lg`. Krótszy tytuł panelu na wąskich ekranach.
+- **Nagłówek na laptopie (1024 px)**: przełącznik Sekwencer/Binauralne i „Projekty” pokazują same ikony poniżej `xl`, więc tytuł projektu się mieści; poradnik ukryty na bardzo wąskich ekranach (< 380 px) i w trybie `short` (dostępny z szerszego widoku).
+- **Desktop (`lg`)**: „Teraz gra” obok transportu (maks. 48% szerokości) zamiast osobnego wiersza; nagłówek ścieżki w osi czasu szerszy (400 px), gdy oś ma ≥ 760 px – nazwy ścieżek nie są ucinane.
+- Testowe budowanie bez npm: `tailwindcss.compile()` (czysty JS) + bundler Bun + Playwright – przydatne, gdy rejestr npm jest niedostępny.

@@ -101,8 +101,9 @@ export function BrainMap({ highlights, size = 'md' }: { highlights: BrainHighlig
           aria-expanded
           className="font-display text-[10px] uppercase tracking-[0.18em] text-muted hover:text-slate-100"
         >
-          Obszar mózgu ▴
+          Obszar mózgu
         </button>
+        <div className="flex items-center gap-1">
         <button
           type="button"
           onClick={() => setVertical(!vertical)}
@@ -111,6 +112,15 @@ export function BrainMap({ highlights, size = 'md' }: { highlights: BrainHighlig
         >
           {vertical ? '↻ przód → góra' : '↻ przód → lewo'}
         </button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="rounded-md border border-plasma/40 px-2 py-0.5 text-[10px] text-plasma hover:bg-plasma/10"
+          aria-label="Schowaj rysunek mózgu"
+        >
+          Schowaj rysunek ✕
+        </button>
+        </div>
       </div>
       <div className={`relative mx-auto ${size === 'sm' ? 'max-w-[220px]' : 'max-w-[340px]'}`}>
         <svg

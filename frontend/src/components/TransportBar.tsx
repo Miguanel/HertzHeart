@@ -26,7 +26,7 @@ export function TransportBar() {
   const duration = compositionDuration(comp)
 
   return (
-    <div data-tour="transport" className="glass relative flex items-center gap-2 px-2.5 py-2 sm:gap-3 sm:px-4">
+    <div data-tour="transport" className="glass relative flex items-center gap-2 px-2.5 py-2 sm:gap-3 sm:px-4 lg:min-w-0 lg:flex-1 short:min-w-0 short:flex-1 short:py-1">
       <IconButton
         size="lg"
         variant="primary"
@@ -34,7 +34,7 @@ export function TransportBar() {
         label={state === 'playing' ? 'Pauza (spacja)' : 'Odtwórz (spacja)'}
         onClick={togglePlay}
         disabled={duration === 0}
-        className="rounded-full!"
+        className="rounded-full! short:size-10!"
       />
       <IconButton icon="stop" label="Stop" onClick={() => engine.stop()} disabled={state === 'stopped'} />
 
@@ -53,15 +53,15 @@ export function TransportBar() {
         />
       </div>
 
-      <div className="hidden w-44 items-center gap-2 sm:flex">
+      <div className="hidden w-44 items-center gap-2 sm:flex short:hidden! lg:w-36 xl:w-44">
         <span className="text-muted" aria-hidden="true">
           ♪
         </span>
         <MasterVolume />
       </div>
-      <IconButton icon="volume" label="Głośność główna" className="sm:hidden" active={showVolume} onClick={() => setShowVolume(!showVolume)} />
+      <IconButton icon="volume" label="Głośność główna" className="sm:hidden short:inline-flex!" active={showVolume} onClick={() => setShowVolume(!showVolume)} />
       {showVolume && (
-        <div className="glass-solid absolute bottom-full right-2 mb-2 w-60 p-3 sm:hidden">
+        <div className="glass-solid absolute bottom-full right-2 mb-2 w-60 p-3 sm:hidden short:block!">
           <MasterVolume />
         </div>
       )}

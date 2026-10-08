@@ -6,6 +6,8 @@ import { clamp } from '../model/time'
 export const MAX_DECIMALS = 7
 export const MIN_SMOOTHING_S = 0.05
 export const MAX_SMOOTHING_S = 5
+export const MIN_STOP_FADE_S = 0.2
+export const MAX_STOP_FADE_S = 8
 
 export interface SettingsState {
   /** Ile miejsc po przecinku pokazywać i przyjmować przy częstotliwościach (0–7). */
@@ -14,6 +16,8 @@ export interface SettingsState {
   smoothing: number
   /** Łagodne wejście/wyjście przy starcie, pauzie i przewijaniu. */
   smoothTransport: boolean
+  /** Czas delikatnego wygaszania przy zatrzymaniu (stop, pauza, wyłączenie fali) [s]. */
+  stopFade: number
   /** Informowanie o pasmach fal mózgowych przy wpisywaniu częstotliwości. */
   brainwaveNotices: boolean
   /** Tryb prosty: bez opisów i analiz – szybkie uruchamianie projektów i fal. */
@@ -23,6 +27,7 @@ export interface SettingsState {
   setDecimals: (decimals: number) => void
   setSmoothing: (seconds: number) => void
   setSmoothTransport: (on: boolean) => void
+  setStopFade: (seconds: number) => void
   setBrainwaveNotices: (on: boolean) => void
   setSimpleMode: (on: boolean) => void
   setBrainMapOpen: (open: boolean) => void
@@ -59,12 +64,14 @@ export const useSettings = create<SettingsState>()(
       decimals: 3,
       smoothing: 1,
       smoothTransport: true,
+      stopFade: 2,
       brainwaveNotices: true,
       simpleMode: false,
       brainMapOpen: false,
       setDecimals: (decimals) => set({ decimals: clamp(Math.round(decimals), 0, MAX_DECIMALS) }),
       setSmoothing: (seconds) => set({ smoothing: clamp(seconds, MIN_SMOOTHING_S, MAX_SMOOTHING_S) }),
       setSmoothTransport: (smoothTransport) => set({ smoothTransport }),
+      setStopFade: (seconds) => set({ stopFade: clamp(seconds, MIN_STOP_FADE_S, MAX_STOP_FADE_S) }),
       setBrainwaveNotices: (brainwaveNotices) => set({ brainwaveNotices }),
       setSimpleMode: (simpleMode) => set({ simpleMode }),
       setBrainMapOpen: (brainMapOpen) => set({ brainMapOpen }),
@@ -80,6 +87,12 @@ export const smoothingTime = () => useSettings.getState().smoothing
 export const transportFade = () => {
   const s = useSettings.getState()
   return s.smoothTransport ? Math.min(s.smoothing, 1.5) : 0.03
+}
+
+/** Czas delikatnego wygaszania przy zatrzymaniu, pauzie i wyłączeniu fali. */
+export const stopFadeTime = () => {
+  const s = useSettings.getState()
+  return s.smoothTransport ? (s.stopFade ?? 2) : 0.05
 }
 
 /** Czas przenikania przy przewijaniu – krótszy, bo przewijanie suwakiem generuje wiele zdarzeń. */

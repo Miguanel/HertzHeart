@@ -1,8 +1,8 @@
 import { compositionDuration } from '../model/envelope'
 import type { Composition, Track, Waveform } from '../model/schema'
 import { clamp } from '../model/time'
-import { seekFade, smoothingTime, transportFade } from '../store/settings'
-import { holdAt, makeOsc, prepareContext, type Osc } from './osc'
+import { seekFade, smoothingTime, stopFadeTime, transportFade } from '../store/settings'
+import { fadeOut, holdAt, makeOsc, prepareContext, type Osc } from './osc'
 import {
   createMasterChain,
   createTrackVoice,
@@ -63,6 +63,13 @@ class AudioEngine {
 
   state: PlaybackState = 'stopped'
   previewKey: string | null = null
+  /** Opis bieżącego odsłuchu z biblioteki (do paska „Teraz gra”). */
+  previewInfo: { label: string; frequencyMilliHz: number; beatMilliHz: number | null } | null = null
+  /** Fale binauralne, które właśnie się wygaszają (pokazywane w pasku „Teraz gra”). */
+  fadingBinaural: readonly string[] = []
+  /** Czy projekt właśnie się wygasza po pauzie/stopie. */
+  projectFading = false
+  private projectFadeTimer: ReturnType<typeof setTimeout> | null = null
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener)
@@ -218,13 +225,26 @@ class AudioEngine {
   pause() {
     if (this.state !== 'playing') return
     this.heldPosition = this.getPosition()
-    this.releaseAll(transportFade())
+    this.releaseAll(this.markProjectFading())
     this.state = 'paused'
     this.emit()
   }
 
+  /** Ustawia stan „wygaszanie” projektu na czas wygaszania i zwraca ten czas. */
+  private markProjectFading(): number {
+    const fade = stopFadeTime()
+    if (!this.voices.size) return fade
+    this.projectFading = true
+    if (this.projectFadeTimer) clearTimeout(this.projectFadeTimer)
+    this.projectFadeTimer = setTimeout(() => {
+      this.projectFading = false
+      this.emit()
+    }, fade * 1000)
+    return fade
+  }
+
   stop() {
-    this.releaseAll(transportFade())
+    this.releaseAll(this.state === 'playing' ? this.markProjectFading() : transportFade())
     this.heldPosition = 0
     this.state = 'stopped'
     this.emit()
@@ -316,23 +336,41 @@ class AudioEngine {
     for (const [id, voice] of this.binaural) {
       if (seen.has(id)) continue
       this.binaural.delete(id)
-      const fade = Math.max(transportFade(), 0.05)
-      holdAt(voice.gain.gain, now)
-      voice.gain.gain.linearRampToValueAtTime(0, now + fade)
+      const fade = Math.max(stopFadeTime(), 0.05)
+      fadeOut(voice.gain.gain, now, fade)
       voice.left.stop(now + fade + 0.05)
       voice.right.stop(now + fade + 0.05)
+      this.fadingBinaural = [...this.fadingBinaural.filter((x) => x !== id), id]
+      this.emit()
       setTimeout(() => {
         voice.left.disconnect()
         voice.right.disconnect()
         voice.gain.disconnect()
+        if (!this.binaural.has(id) || this.fadingBinaural.includes(id)) {
+          this.fadingBinaural = this.fadingBinaural.filter((x) => x !== id)
+          this.emit()
+        }
       }, (fade + 0.2) * 1000)
+    }
+    // fala włączona ponownie w trakcie wygaszania – już nie „wygasa”
+    const restarted = this.fadingBinaural.filter((x) => this.binaural.has(x))
+    if (restarted.length) {
+      this.fadingBinaural = this.fadingBinaural.filter((x) => !this.binaural.has(x))
+      this.emit()
     }
   }
 
   // ───────────────────────── Odsłuch z biblioteki ─────────────────────────
 
   /** Krótki odsłuch; z `beatMilliHz` gra parę binauralną (lewy/prawy kanał). */
-  async togglePreview(key: string, frequencyMilliHz: number, beatMilliHz?: number | null, waveform: Waveform = 'sine', seconds = 6) {
+  async togglePreview(
+    key: string,
+    frequencyMilliHz: number,
+    beatMilliHz?: number | null,
+    waveform: Waveform = 'sine',
+    seconds = 6,
+    label = 'Odsłuch',
+  ) {
     const wasSame = this.previewVoice?.key === key
     this.stopPreview()
     if (wasSame) return
@@ -359,15 +397,17 @@ class AudioEngine {
       }
       return osc
     })
-    const fade = Math.min(0.3, seconds / 4)
+    const fadeIn = Math.min(0.3, seconds / 4)
+    const fadeEnd = Math.min(1.5, seconds / 4)
     gain.gain.setValueAtTime(0, now)
-    gain.gain.linearRampToValueAtTime(0.6, now + fade)
-    gain.gain.setValueAtTime(0.6, now + seconds - fade)
-    gain.gain.linearRampToValueAtTime(0, now + seconds)
+    gain.gain.linearRampToValueAtTime(0.6, now + fadeIn)
+    gain.gain.setValueAtTime(0.6, now + seconds - fadeEnd)
+    gain.gain.setTargetAtTime(0, now + seconds - fadeEnd, fadeEnd / 4) // miękkie zejście
     const timer = setTimeout(() => {
       if (this.previewVoice?.key === key) {
         this.previewVoice = null
         this.previewKey = null
+        this.previewInfo = null
         this.emit()
       }
       oscs.forEach((o) => o.disconnect())
@@ -375,6 +415,7 @@ class AudioEngine {
     }, (seconds + 0.3) * 1000)
     this.previewVoice = { oscs, gain, key, timer }
     this.previewKey = key
+    this.previewInfo = { label, frequencyMilliHz, beatMilliHz: beatMilliHz ?? null }
     this.emit()
   }
 
@@ -382,16 +423,17 @@ class AudioEngine {
     const pv = this.previewVoice
     if (!pv || !this.ctx) return
     const now = this.ctx.currentTime
-    holdAt(pv.gain.gain, now)
-    pv.gain.gain.linearRampToValueAtTime(0, now + 0.08)
-    pv.oscs.forEach((o) => o.stop(now + 0.12))
+    const fade = Math.min(1.5, Math.max(0.08, stopFadeTime()))
+    fadeOut(pv.gain.gain, now, fade)
+    pv.oscs.forEach((o) => o.stop(now + fade + 0.05))
     clearTimeout(pv.timer)
     setTimeout(() => {
       pv.oscs.forEach((o) => o.disconnect())
       pv.gain.disconnect()
-    }, 300)
+    }, (fade + 0.3) * 1000)
     this.previewVoice = null
     this.previewKey = null
+    this.previewInfo = null
     this.emit()
   }
 }

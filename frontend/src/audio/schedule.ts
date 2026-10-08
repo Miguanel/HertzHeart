@@ -1,6 +1,6 @@
 import { valueAt } from '../model/envelope'
 import type { Composition, Curve, Track } from '../model/schema'
-import { holdAt, makeOsc, prepareContext, type Osc } from './osc'
+import { fadeOut, holdAt, makeOsc, prepareContext, type Osc } from './osc'
 
 /** Krawędzie segmentów: łagodne wejście/wyjście – eliminuje trzaski na początku i końcu segmentu. */
 export const FADE = 0.015
@@ -143,8 +143,7 @@ export function glidePan(ctx: BaseAudioContext, voice: TrackVoice, pan: number, 
 /** Wycisza i zwalnia głos po czasie `fade`. */
 export function releaseTrackVoice(ctx: BaseAudioContext, voice: TrackVoice, fade: number) {
   const now = ctx.currentTime
-  holdAt(voice.env.gain, now)
-  voice.env.gain.linearRampToValueAtTime(0, now + Math.max(fade, 0.005))
+  fadeOut(voice.env.gain, now, Math.max(fade, 0.005))
   voice.osc.stop(now + fade + 0.05)
   setTimeout(() => {
     voice.osc.disconnect()

@@ -5,7 +5,7 @@ import { engine } from '../audio/engine'
 import { BRAIN_BANDS, QUICK_BANDS, bandLabel, bandRange, detectCouplings, matchFrequency } from '../data/brainwaves'
 import { createBinauralPair } from '../model/envelope'
 import { formatHz } from '../model/frequency'
-import { BEAT_MAX, BEAT_MIN, CARRIER_MAX, CARRIER_MIN, useBinaural, type BinauralWave } from '../store/binauralStore'
+import { BEAT_MAX, BEAT_MIN, CARRIER_MAX, CARRIER_MIN, stackOf, useBinaural, type BinauralWave } from '../store/binauralStore'
 import { useProjectStore } from '../store/projectStore'
 import { useSettings } from '../store/settings'
 import { useUi } from '../store/uiStore'
@@ -72,39 +72,44 @@ const togglePlay = (id: string) => {
   useBinaural.getState().togglePlaying(id)
 }
 
-function Generator({ wave }: { wave: BinauralWave }) {
+/** Popularne nośne do szybkiego wyboru [Hz]. */
+const CARRIER_PRESETS = [100, 136.1, 200, 250, 300, 432, 528]
+
+/** Jedna warstwa generatora: własna nośna i własny zakres fali mózgowej. */
+function LayerCard({ wave, index, focused, canRemove }: { wave: BinauralWave; index: number; focused: boolean; canRemove: boolean }) {
   const update = useBinaural((s) => s.update)
-  const duplicate = useBinaural((s) => s.duplicate)
+  const focus = useBinaural((s) => s.focus)
+  const removeLayer = useBinaural((s) => s.removeLayer)
+  const allWaves = useBinaural((s) => s.waves)
   const playing = useBinaural((s) => s.playing.includes(wave.id))
   const decimals = useSettings((s) => s.decimals)
-  const addTracks = useProjectStore((s) => s.addTracks)
-  const showNotice = useUi((s) => s.showNotice)
-  const [minutes, setMinutes] = useState(5)
   const [name, setName] = useState<string | null>(null)
-  const simple = useSettings((s) => s.simpleMode)
   const markers = useSavedMarkers(wave.id)
 
   const carrier = wave.carrierMilliHz / 1000
   const beat = wave.beatMilliHz / 1000
+  const band = matchFrequency(beat).band
+  const color = band?.color ?? '#7d8bab'
   const set = (patch: Partial<BinauralWave>) => update(wave.id, patch)
-
-  const addToProject = () => {
-    addTracks(createBinauralPair(wave.name, wave.carrierMilliHz, wave.beatMilliHz, Math.max(1, minutes) * 60))
-    showNotice({ text: `Dodano „${wave.name}” do projektu jako parę ścieżek L/P (${minutes} min).` })
-  }
+  const carrierChoices = useMemo(() => {
+    const others = allWaves.filter((w) => w.id !== wave.id).map((w) => Number((w.carrierMilliHz / 1000).toFixed(3)))
+    return [...new Set([...CARRIER_PRESETS, ...others])].sort((x, y) => x - y)
+  }, [allWaves, wave.id])
 
   return (
-    <div className="space-y-4 p-3 sm:p-4">
-      <div className="flex items-center gap-2">
-        <IconButton
-          size="lg"
-          variant="primary"
-          icon={playing ? 'stop' : 'play'}
-          label={playing ? 'Zatrzymaj falę' : 'Odtwórz falę'}
-          onClick={() => togglePlay(wave.id)}
-          className="rounded-full!"
-          active={playing}
-        />
+    <article
+      onPointerDownCapture={() => !focused && focus(wave.id)}
+      className={`space-y-3 rounded-2xl border p-3 transition-colors ${focused ? 'bg-white/[0.03]' : 'border-line/60 bg-white/[0.015]'}`}
+      style={focused ? { borderColor: `color-mix(in oklab, ${color} 55%, transparent)` } : undefined}
+    >
+      <header className="flex items-center gap-2">
+        <span
+          className="flex size-7 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-semibold text-black"
+          style={{ background: color }}
+          title={`Warstwa ${index + 1}`}
+        >
+          {index + 1}
+        </span>
         <input
           aria-label="Nazwa fali"
           value={name ?? wave.name}
@@ -114,25 +119,22 @@ function Generator({ wave }: { wave: BinauralWave }) {
             setName(null)
           }}
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-          className="field h-10 min-w-0 flex-1 text-sm outline-none"
+          className="field h-9 min-w-0 flex-1 text-sm outline-none"
         />
-      </div>
+        <IconButton
+          variant="primary"
+          icon={playing ? 'stop' : 'play'}
+          label={playing ? 'Zatrzymaj warstwę' : 'Odtwórz warstwę'}
+          onClick={() => togglePlay(wave.id)}
+          active={playing}
+          className="rounded-full!"
+        />
+        {canRemove && <IconButton icon="close" label="Usuń warstwę z generatora (fala zostaje na liście)" onClick={() => removeLayer(wave.id)} />}
+      </header>
 
-      <section className="space-y-2 rounded-2xl border border-line/60 bg-white/[0.02] p-3">
+      <section className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-display text-[10px] uppercase tracking-[0.2em] text-muted">Częstotliwość nośna</h3>
-          <span className="font-mono text-[11px] text-muted">lewe ucho</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Slider
-            label="Częstotliwość nośna"
-            value={logNorm(carrier, CARRIER_MIN / 1000, CARRIER_MAX / 1000)}
-            min={0}
-            max={1}
-            step={0.0005}
-            onChange={(n) => set({ carrierMilliHz: Math.round(logValue(n, CARRIER_MIN / 1000, CARRIER_MAX / 1000) * 1000) })}
-            className="flex-1"
-          />
+          <h3 className="font-display text-[10px] uppercase tracking-[0.2em] text-muted">Fala nośna · lewe ucho</h3>
           <FrequencyField
             label="Częstotliwość nośna w Hz"
             mHz={wave.carrierMilliHz}
@@ -142,13 +144,34 @@ function Generator({ wave }: { wave: BinauralWave }) {
             className={`${decimals > 4 ? 'w-40' : 'w-32'} shrink-0`}
           />
         </div>
-        <div className="flex justify-between font-mono text-[9px] text-muted">
-          <span>{CARRIER_MIN / 1000} Hz</span>
-          <span>{CARRIER_MAX / 1000} Hz</span>
+        <Slider
+          label="Częstotliwość nośna"
+          value={logNorm(carrier, CARRIER_MIN / 1000, CARRIER_MAX / 1000)}
+          min={0}
+          max={1}
+          step={0.0005}
+          onChange={(n) => set({ carrierMilliHz: Math.round(logValue(n, CARRIER_MIN / 1000, CARRIER_MAX / 1000) * 1000) })}
+        />
+        <div className="no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-1" role="group" aria-label="Szybki wybór nośnej">
+          {carrierChoices.map((c) => {
+            const active = Math.abs(c - carrier) < 0.0005
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => set({ carrierMilliHz: Math.round(c * 1000) })}
+                className={`shrink-0 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors ${
+                  active ? 'border-neon/60 bg-neon/15 text-neon' : 'border-line text-muted hover:text-slate-100'
+                }`}
+              >
+                {String(c).replace('.', ',')}
+              </button>
+            )
+          })}
         </div>
       </section>
 
-      <section className="space-y-2 rounded-2xl border border-line/60 bg-white/[0.02] p-3">
+      <section className="space-y-2 border-t border-line/50 pt-3">
         <div className="flex items-center justify-between gap-2">
           <h3 className="font-display text-[10px] uppercase tracking-[0.2em] text-muted">Fala mózgowa (wynik)</h3>
           <FrequencyField
@@ -160,67 +183,106 @@ function Generator({ wave }: { wave: BinauralWave }) {
             className={`${decimals > 4 ? 'w-40' : 'w-32'} shrink-0`}
           />
         </div>
-        <BandSlider hz={beat} onChange={(hz) => set({ beatMilliHz: hz * 1000 })} markers={markers} />
+        <BandSlider hz={beat} onChange={(hz) => set({ beatMilliHz: hz * 1000 })} markers={markers} compact={!focused} />
         <div className="flex justify-between font-mono text-[11px] text-muted">
           <span>L {formatHz(wave.carrierMilliHz, decimals)} Hz</span>
           <span>P {formatHz(wave.carrierMilliHz + wave.beatMilliHz, decimals)} Hz</span>
         </div>
       </section>
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 text-[11px] text-muted">Pasmo:</span>
-        {QUICK_BANDS.map((b) => {
-          const active = beat >= b.min && beat < b.max
-          return (
-            <button
-              key={b.id}
-              type="button"
-              onClick={() => set({ beatMilliHz: b.center * 1000 })}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
-                active ? 'text-slate-100' : 'border-line text-muted hover:text-slate-100'
-              }`}
-              style={active ? { borderColor: b.color, background: `color-mix(in oklab, ${b.color} 15%, transparent)` } : undefined}
-              title={`${b.min}–${b.max} Hz (ustawia ${b.center} Hz)`}
-            >
-              <span className="size-2 rounded-full" style={{ background: b.color }} />
-              {b.label}
-            </button>
-          )
-        })}
-      </div>
-
       <div className="flex items-center gap-3">
         <Icon name="volume" className="size-4 text-muted" />
-        <Slider label="Głośność fali" value={wave.volume} onChange={(v) => set({ volume: v })} className="flex-1" />
+        <Slider label="Głośność warstwy" value={wave.volume} onChange={(v) => set({ volume: v })} className="flex-1" />
         <span className="w-9 text-right font-mono text-xs tabular-nums text-muted">{Math.round(wave.volume * 100)}%</span>
       </div>
 
       {(beat > 40 || carrier > 1000 || beat >= carrier) && (
-        <div className="space-y-1 rounded-xl border border-warn/40 bg-warn/[0.06] p-3 text-xs leading-relaxed text-warn">
+        <div className="space-y-1 rounded-xl border border-warn/40 bg-warn/[0.06] p-2.5 text-xs leading-relaxed text-warn">
           {beat > 40 && <p>Dudnienie binauralne powyżej ok. 30–40 Hz jest słabo odczuwalne – mózg zaczyna słyszeć dwa osobne tony.</p>}
           {carrier > 1000 && <p>Efekt binauralny jest najwyraźniejszy przy nośnej poniżej ok. 1000 Hz.</p>}
           {beat >= carrier && <p>Dudnienie jest większe od nośnej – to już dwa różne dźwięki, a nie dudnienie.</p>}
         </div>
       )}
+    </article>
+  )
+}
+
+/** Generator: stos warstw (kolejnych fal binauralnych) edytowanych i odtwarzanych razem. */
+function Generator() {
+  const waves = useBinaural((s) => s.waves)
+  const stackIds = useBinaural((s) => stackOf(s).join(','))
+  const selectedId = useBinaural((s) => s.selectedId)
+  const playing = useBinaural((s) => s.playing)
+  const { addLayer, playStack, stopStack } = useBinaural.getState()
+  const decimals = useSettings((s) => s.decimals)
+  const simple = useSettings((s) => s.simpleMode)
+  const addTracks = useProjectStore((s) => s.addTracks)
+  const showNotice = useUi((s) => s.showNotice)
+  const [minutes, setMinutes] = useState(5)
+
+  const layers = stackIds
+    .split(',')
+    .map((id) => waves.find((w) => w.id === id))
+    .filter((w): w is BinauralWave => !!w)
+  const focused = layers.find((w) => w.id === selectedId) ?? layers[0]
+  const anyPlaying = layers.some((w) => playing.includes(w.id))
+
+  const addToProject = () => {
+    addTracks(layers.flatMap((w) => createBinauralPair(w.name, w.carrierMilliHz, w.beatMilliHz, Math.max(1, minutes) * 60)))
+    showNotice({ text: `Dodano ${layers.length === 1 ? `„${layers[0].name}”` : `${layers.length} warstwy`} do projektu jako pary ścieżek L/P (${minutes} min).` })
+  }
+
+  return (
+    <div className="space-y-3 p-3 sm:p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-display text-[10px] uppercase tracking-[0.2em] text-muted">Warstwy: {layers.length}</span>
+        <div className="ml-auto flex gap-1.5">
+          {layers.length > 1 && (
+            <Button
+              size="sm"
+              variant={anyPlaying ? 'danger' : 'primary'}
+              icon={anyPlaying ? 'stop' : 'play'}
+              onClick={() => {
+                void engine.unlock()
+                if (anyPlaying) stopStack()
+                else playStack()
+              }}
+            >
+              {anyPlaying ? 'Zatrzymaj warstwy' : 'Odtwórz wszystkie'}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {layers.map((w, i) => (
+        <LayerCard key={w.id} wave={w} index={i} focused={w.id === focused?.id} canRemove={layers.length > 1} />
+      ))}
+
+      <button
+        type="button"
+        onClick={() => addLayer()}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-neon/50 bg-neon/[0.04] px-4 py-3 text-sm text-neon transition-colors hover:bg-neon/10"
+      >
+        <Icon name="plus" className="size-5" />
+        Dodaj kolejną falę binauralną
+        <span className="hidden text-[11px] text-muted sm:inline">– nowy zakres i nowa nośna</span>
+      </button>
 
       <div className="flex flex-wrap items-end gap-2">
         <NumberField label="Długość w projekcie [min]" value={minutes} decimals={0} min={1} max={720} onCommit={setMinutes} className="w-36" />
-        <Button variant="primary" icon="plus" onClick={addToProject}>
-          Dodaj do projektu
-        </Button>
-        <Button icon="copy" onClick={() => duplicate(wave.id)}>
-          Duplikuj
+        <Button variant="primary" icon="plus" onClick={addToProject} disabled={!layers.length}>
+          {layers.length > 1 ? 'Dodaj warstwy do projektu' : 'Dodaj do projektu'}
         </Button>
       </div>
 
-      {!simple && (
-      <div className="space-y-3 border-t border-line/60 pt-4">
-        <h3 className="flex items-center gap-2 font-display text-[11px] uppercase tracking-[0.2em] text-plasma">
-          <Icon name="brain" className="size-4" /> {formatHz(wave.beatMilliHz, decimals)} Hz – pasmo fal mózgowych
-        </h3>
-        <BrainInfoView hz={beat} />
-        <Disclaimer />
-      </div>
+      {!simple && focused && (
+        <div className="space-y-3 border-t border-line/60 pt-4">
+          <h3 className="flex items-center gap-2 font-display text-[11px] uppercase tracking-[0.2em] text-plasma">
+            <Icon name="brain" className="size-4" /> Warstwa {layers.indexOf(focused) + 1}: {formatHz(focused.beatMilliHz, decimals)} Hz – pasmo fal mózgowych
+          </h3>
+          <BrainInfoView hz={focused.beatMilliHz / 1000} />
+          <Disclaimer />
+        </div>
       )}
     </div>
   )
@@ -245,7 +307,7 @@ function WaveList() {
   return (
     <Panel
       title="Moje fale binauralne"
-      className="min-h-[320px] lg:h-full"
+      className="min-h-[320px] lg:min-h-0 lg:flex-1"
       bodyClassName="flex flex-col"
       actions={
         <>
@@ -372,19 +434,24 @@ export function BinauralStudio() {
   const add = useBinaural((s) => s.add)
   const simple = useSettings((s) => s.simpleMode)
   return (
-    <div className="grid min-h-0 w-full flex-1 gap-3 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_360px] lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_400px]">
+    <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:overflow-hidden xl:grid-cols-[minmax(0,1fr)_400px]">
       <Panel
         title={
           <span className="flex items-center gap-2">
-            <Icon name="headphones" className="size-4 text-warn" /> {simple ? 'Fale binauralne' : 'Generator binauralny · słuchawki wymagane'}
+            <Icon name="headphones" className="size-4 shrink-0 text-warn" />
+            {simple ? 'Fale binauralne' : (
+              <>
+                Generator binauralny<span className="hidden sm:inline"> · słuchawki wymagane</span>
+              </>
+            )}
           </span>
         }
         actions={<SimpleToggle />}
-        className="lg:min-h-0"
+        className="min-w-0 shrink-0 lg:min-h-0 lg:shrink"
         bodyClassName="lg:overflow-y-auto"
       >
         {wave ? (
-          <Generator key={wave.id} wave={wave} />
+          <Generator />
         ) : (
           <div className="flex flex-col items-center gap-3 p-10 text-center">
             <p className="text-sm text-muted">Wybierz falę z listy albo utwórz nową.</p>
@@ -394,7 +461,7 @@ export function BinauralStudio() {
           </div>
         )}
       </Panel>
-      <div className={`flex min-h-0 flex-col gap-3 lg:overflow-y-auto ${simple ? 'order-first lg:order-none' : ''}`}>
+      <div className={`flex min-w-0 shrink-0 flex-col gap-3 lg:min-h-0 lg:shrink lg:overflow-y-auto ${simple ? 'order-first lg:order-none' : ''}`}>
         <QuickLaunch simple={simple} />
         <WaveList />
       </div>

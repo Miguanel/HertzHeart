@@ -184,3 +184,30 @@ export function holdAt(param: AudioParam, t: number) {
     param.setValueAtTime(v, t)
   }
 }
+
+/**
+ * Delikatne wygaszenie: zamiast liniowej rampy (która brzmi jak nagłe „ucięcie” pod koniec) głośność opada
+ * po krzywej w decybelach z miękkim początkiem (do ok. −50 dB) i łagodnie domyka się do zera.
+ */
+export function fadeOut(param: AudioParam, t: number, duration: number) {
+  const d = Math.max(duration, 0.01)
+  holdAt(param, t)
+  const v0 = Math.max(0, param.value)
+  if (v0 === 0 || d < 0.05) {
+    param.linearRampToValueAtTime(0, t + d)
+    return
+  }
+  const n = Math.max(16, Math.min(256, Math.round(d * 60)))
+  const curve = new Float32Array(n)
+  for (let i = 0; i < n; i++) {
+    const x = i / (n - 1)
+    // miękki początek (powolne zejście), dalej równomiernie w dB do ok. −50 dB, na końcu łagodnie do zera
+    curve[i] = v0 * 10 ** ((-50 * x ** 1.4) / 20) * (1 - x ** 4)
+  }
+  try {
+    // krzywa startuje tuż po punkcie zamrożenia – nie może nakładać się na inne zdarzenia
+    param.setValueCurveAtTime(curve, t + 0.002, d)
+  } catch {
+    param.linearRampToValueAtTime(0, t + d)
+  }
+}

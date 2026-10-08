@@ -188,7 +188,7 @@ export function LibraryPanel({ library, offline, loading, onAdded, onOpenPreset 
                     icon={playing ? 'stop' : 'headphones'}
                     label={playing ? 'Zatrzymaj odsłuch' : 'Odsłuchaj'}
                     active={playing}
-                    onClick={() => void engine.togglePreview(key, f.frequencyMilliHz, f.binauralBeatMilliHz)}
+                    onClick={() => void engine.togglePreview(key, f.frequencyMilliHz, f.binauralBeatMilliHz, 'sine', 6, f.name)}
                   />
                   <IconButton icon="plus" label="Dodaj do projektu" variant="outline" onClick={() => addFromLibrary(f)} />
                 </li>
@@ -225,7 +225,7 @@ export function LibraryPanel({ library, offline, loading, onAdded, onOpenPreset 
             <div className="mt-5 grid grid-cols-2 gap-2">
               <Button
                 icon="headphones"
-                onClick={() => void engine.togglePreview(`lib:${info.id}`, info.frequencyMilliHz, info.binauralBeatMilliHz)}
+                onClick={() => void engine.togglePreview(`lib:${info.id}`, info.frequencyMilliHz, info.binauralBeatMilliHz, 'sine', 6, info.name)}
               >
                 {previewKey === `lib:${info.id}` ? 'Zatrzymaj' : 'Odsłuchaj'}
               </Button>

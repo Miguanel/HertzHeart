@@ -6,6 +6,7 @@ import { BrainInfoSheet, ProjectBrainStrip, useBrainwaveNotices } from './compon
 import { ClipInspector } from './components/ClipInspector'
 import { Icon, type IconName } from './components/icons'
 import { LibraryPanel } from './components/LibraryPanel'
+import { PlayingDock } from './components/PlayingDock'
 import { ProjectsPanel } from './components/ProjectsPanel'
 import { SettingsPanel } from './components/SettingsPanel'
 import { SharePanel } from './components/SharePanel'
@@ -135,7 +136,7 @@ export default function App() {
     <div className="app-bg flex h-dvh flex-col overflow-hidden text-slate-100">
       <TopBar onProjects={() => setSheet('projects')} onShare={() => setSheet('share')} onSettings={() => setSheet('settings')} />
 
-      <main className="mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 gap-3 px-3 pb-3 sm:px-5">
+      <main className="mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 gap-3 px-3 pb-3 sm:px-5 short:pb-1.5">
         {mode === 'binaural' ? (
           <BinauralStudio />
         ) : (
@@ -158,9 +159,10 @@ export default function App() {
         )}
       </main>
 
-      <footer className="mx-auto w-full max-w-[1920px] space-y-2 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-5 lg:pb-4">
+      <footer className="mx-auto w-full max-w-[1920px] space-y-2 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-5 lg:flex lg:items-stretch lg:gap-3 lg:space-y-0 lg:pb-4 short:flex short:items-stretch short:gap-1.5 short:space-y-0 short:pb-[calc(env(safe-area-inset-bottom)+0.375rem)]">
+        <PlayingDock />
         {mode === 'sequencer' && <TransportBar />}
-        <nav data-tour="mobile-nav" className="glass grid grid-cols-4 gap-1 p-1 lg:hidden" aria-label="Nawigacja">
+        <nav data-tour="mobile-nav" className="glass grid grid-cols-4 gap-1 p-1 lg:hidden short:hidden" aria-label="Nawigacja">
           {tab('library', 'library', 'Biblioteka')}
           {tab('editor', 'wave', 'Edytor')}
           {tab('binaural', 'binaural', 'Binauralne')}
@@ -211,7 +213,7 @@ function NoticeBar() {
   return (
     <div
       role="status"
-      className={`glass-solid fixed bottom-[calc(env(safe-area-inset-bottom)+8.5rem)] left-1/2 z-[55] flex w-[min(36rem,calc(100vw-1.5rem))] -translate-x-1/2 items-start gap-2 p-3 lg:bottom-24 ${
+      className={`glass-solid fixed top-[calc(env(safe-area-inset-top)+4.25rem)] left-1/2 z-[55] flex w-[min(36rem,calc(100vw-1.5rem))] -translate-x-1/2 items-start gap-2 p-3 ${
         notice.tone === 'warn' ? 'border-warn/50!' : 'border-plasma/40!'
       }`}
     >

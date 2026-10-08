@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+/* Niski ekran (telefon poziomo, małe okno): kompaktowy układ z nawigacją w nagłówku. */
+@custom-variant short (@media (max-height: 540px));
+
 @theme {
   --font-display: 'Orbitron', ui-sans-serif, system-ui, sans-serif;
   --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
@@ -190,4 +193,24 @@
 }
 .band-hold {
   animation: band-hold linear forwards;
+}
+
+/* Para nad filiżanką kawy (przycisk „Postaw mi kawę”) */
+.coffee-steam {
+  animation: coffee-steam 2.4s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: bottom center;
+}
+@keyframes coffee-steam {
+  0% {
+    opacity: 0;
+    transform: translateY(3px) scaleY(0.7);
+  }
+  40% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-3px) scaleY(1.1);
+  }
 }

@@ -46,7 +46,8 @@ export function Timeline({ onOpenLibrary }: { onOpenLibrary: () => void }) {
   }, [trackCount, selectedTrackId])
 
   const wide = viewW >= 640
-  const headerW = wide ? HEADER_W : 0
+  // Szerszy nagłówek ścieżki na dużych ekranach – nazwy nie są ucinane do kilku liter.
+  const headerW = wide ? (viewW >= 760 ? HEADER_W + 64 : HEADER_W) : 0
   const laneH = wide ? 84 : 60
   const duration = compositionDuration(comp)
   const span = Math.max(duration * 1.08 + 5, 60)

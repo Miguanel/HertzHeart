@@ -1,7 +1,8 @@
 import { useSyncExternalStore, type ReactNode } from 'react'
 import { engine } from '../audio/engine'
 import { formatHz } from '../model/frequency'
-import { MAX_DECIMALS, MAX_SMOOTHING_S, MIN_SMOOTHING_S, useSettings } from '../store/settings'
+import { MAX_DECIMALS, MAX_SMOOTHING_S, MAX_STOP_FADE_S, MIN_SMOOTHING_S, MIN_STOP_FADE_S, useSettings } from '../store/settings'
+import { CoffeeCard } from './Coffee'
 import { Slider } from './ui'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -69,11 +70,29 @@ export function SettingsPanel() {
           />
           <span className="w-14 text-right font-mono text-sm tabular-nums text-neon">{s.smoothing.toFixed(2)} s</span>
         </div>
+        <div className="space-y-1">
+          <div className="text-sm text-slate-200">Delikatne wygaszanie przy zatrzymaniu</div>
+          <div className="flex items-center gap-3">
+            <Slider
+              label="Czas wygaszania"
+              value={s.stopFade ?? 2}
+              min={MIN_STOP_FADE_S}
+              max={MAX_STOP_FADE_S}
+              step={0.1}
+              onChange={s.setStopFade}
+              className="flex-1"
+            />
+            <span className="w-14 text-right font-mono text-sm tabular-nums text-neon">{(s.stopFade ?? 2).toFixed(1)} s</span>
+          </div>
+          <p className="text-xs leading-relaxed text-muted">
+            Stop, pauza i wyłączenie fali binauralnej nie ucinają dźwięku – głośność opada płynnie (krzywa wykładnicza, równo w decybelach).
+          </p>
+        </div>
         <Toggle
           checked={s.smoothTransport}
           onChange={s.setSmoothTransport}
           label="Łagodny start, pauza i przewijanie"
-          hint="Wejście i wyciszenie przy odtwarzaniu/pauzie (maks. 1,5 s) oraz przenikanie przy przewijaniu (maks. 0,3 s)."
+          hint="Łagodne wejście przy starcie (maks. 1,5 s), wygaszanie przy zatrzymaniu (czas powyżej) i przenikanie przy przewijaniu (maks. 0,3 s)."
         />
         <p className="text-xs leading-relaxed text-muted">
           Ochrona wyjścia działa zawsze: filtr składowej stałej, limiter oraz płynne wyciszenie i powrót dźwięku, gdy urządzenie
@@ -128,6 +147,7 @@ export function SettingsPanel() {
           hint="Po dodaniu ścieżki lub zmianie częstotliwości pokazuje, do jakiej podsekcji (Delta, Theta, Alpha, SMR, Beta, Gamma, Ripples…) należy i jakie ma opisane efekty. Dla par L/P – częstotliwość dudnienia."
         />
       </Section>
+      <CoffeeCard />
     </div>
   )
 }
