@@ -192,7 +192,7 @@ export function buildSteps(mobile: boolean): TourStep[] {
       id: 'nav',
       target: [t('mobile-nav')],
       title: 'Nawigacja',
-      text: 'Na telefonie przełączasz się tu między biblioteką, edytorem i projektami.',
+      text: 'Na telefonie przełączasz się tu między biblioteką, edytorem, falami binauralnymi, pomiarem bujania (żyroskop telefonu) i projektami.',
       ui: { view: 'editor' },
     },
     {

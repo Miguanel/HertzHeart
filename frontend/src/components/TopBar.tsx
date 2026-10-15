@@ -56,6 +56,7 @@ function ModeSwitch() {
     <div role="tablist" aria-label="Tryb" className="hidden shrink-0 gap-1 rounded-lg border border-line/70 p-0.5 lg:flex">
       {btn('sequencer', 'wave', 'Sekwencer')}
       {btn('binaural', 'binaural', 'Binauralne')}
+      {btn('sway', 'sway', 'Bujanie')}
     </div>
   )
 }
@@ -63,9 +64,9 @@ function ModeSwitch() {
 /** Nawigacja w nagłówku dla niskich ekranów (telefon poziomo) – zastępuje dolny pasek, żeby zostało miejsce na treść. */
 function CompactNav({ onProjects }: { onProjects: () => void }) {
   const { mode, view, sheet, setMode, setView, setSheet } = useUi()
-  const item = (id: 'library' | 'editor' | 'binaural' | 'projects', icon: IconName, label: string) => {
+  const item = (id: 'library' | 'editor' | 'binaural' | 'sway' | 'projects', icon: IconName, label: string) => {
     const active =
-      id === 'projects' ? sheet === 'projects' : sheet === null && (id === 'binaural' ? mode === 'binaural' : mode === 'sequencer' && view === id)
+      id === 'projects' ? sheet === 'projects' : sheet === null && (id === 'binaural' || id === 'sway' ? mode === id : mode === 'sequencer' && view === id)
     return (
       <button
         type="button"
@@ -75,7 +76,7 @@ function CompactNav({ onProjects }: { onProjects: () => void }) {
         onClick={() => {
           if (id === 'projects') return onProjects()
           setSheet(null)
-          if (id === 'binaural') setMode('binaural')
+          if (id === 'binaural' || id === 'sway') setMode(id)
           else setView(id)
         }}
         className={`flex size-9 items-center justify-center rounded-md transition-colors ${active ? 'bg-neon/15 text-neon' : 'text-muted'}`}
@@ -89,6 +90,7 @@ function CompactNav({ onProjects }: { onProjects: () => void }) {
       {item('library', 'library', 'Biblioteka')}
       {item('editor', 'wave', 'Edytor')}
       {item('binaural', 'binaural', 'Binauralne')}
+      {item('sway', 'sway', 'Bujanie')}
       {item('projects', 'folder', 'Projekty')}
     </nav>
   )

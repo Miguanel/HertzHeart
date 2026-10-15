@@ -80,6 +80,16 @@ const PATHS = {
     </>
   ),
   file: <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5" />,
+  sway: (
+    <>
+      <rect x="9" y="4" width="6" height="12" rx="1.5" />
+      <path d="M11.2 13.6h1.6" />
+      <path d="M5.5 7.5a8 8 0 0 0 0 7M18.5 7.5a8 8 0 0 1 0 7" opacity="0.7" />
+      <path d="M3 5.5a11.5 11.5 0 0 0 0 11M21 5.5a11.5 11.5 0 0 1 0 11" opacity="0.4" />
+      <path d="M8 20h8" />
+    </>
+  ),
+  external: <path d="M14 4h6v6M20 4l-9 9M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />,
 } satisfies Record<string, ReactNode>
 
 export type IconName = keyof typeof PATHS

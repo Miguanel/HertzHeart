@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 export type MobileView = 'library' | 'editor'
-export type AppMode = 'sequencer' | 'binaural'
+export type AppMode = 'sequencer' | 'binaural' | 'sway'
 export type SheetId = 'projects' | 'share' | 'settings' | null
 export type LibraryTab = 'frequencies' | 'presets'
 

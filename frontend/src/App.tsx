@@ -10,6 +10,7 @@ import { PlayingDock } from './components/PlayingDock'
 import { ProjectsPanel } from './components/ProjectsPanel'
 import { SettingsPanel } from './components/SettingsPanel'
 import { SharePanel } from './components/SharePanel'
+import { SwayLab } from './components/SwayLab'
 import { Timeline } from './components/Timeline'
 import { TopBar } from './components/TopBar'
 import { TransportBar } from './components/TransportBar'
@@ -106,15 +107,15 @@ export default function App() {
     }
   }
 
-  const tab = (id: MobileView | 'projects' | 'binaural', icon: IconName, label: string) => {
+  const tab = (id: MobileView | 'projects' | 'binaural' | 'sway', icon: IconName, label: string) => {
     const active =
       id === 'projects'
         ? sheet === 'projects'
-        : sheet === null && (id === 'binaural' ? mode === 'binaural' : mode === 'sequencer' && view === id)
+        : sheet === null && (id === 'binaural' || id === 'sway' ? mode === id : mode === 'sequencer' && view === id)
     const go = () => {
       if (id === 'projects') return setSheet('projects')
       setSheet(null)
-      if (id === 'binaural') setMode('binaural')
+      if (id === 'binaural' || id === 'sway') setMode(id)
       else setView(id)
     }
     return (
@@ -137,7 +138,9 @@ export default function App() {
       <TopBar onProjects={() => setSheet('projects')} onShare={() => setSheet('share')} onSettings={() => setSheet('settings')} />
 
       <main className="mx-auto flex min-h-0 w-full max-w-[1920px] flex-1 gap-3 px-3 pb-3 sm:px-5 short:pb-1.5">
-        {mode === 'binaural' ? (
+        {mode === 'sway' ? (
+          <SwayLab />
+        ) : mode === 'binaural' ? (
           <BinauralStudio />
         ) : (
           <>
@@ -162,10 +165,11 @@ export default function App() {
       <footer className="mx-auto w-full max-w-[1920px] space-y-2 px-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:px-5 lg:flex lg:items-stretch lg:gap-3 lg:space-y-0 lg:pb-4 short:flex short:items-stretch short:gap-1.5 short:space-y-0 short:pb-[calc(env(safe-area-inset-bottom)+0.375rem)]">
         <PlayingDock />
         {mode === 'sequencer' && <TransportBar />}
-        <nav data-tour="mobile-nav" className="glass grid grid-cols-4 gap-1 p-1 lg:hidden short:hidden" aria-label="Nawigacja">
+        <nav data-tour="mobile-nav" className="glass grid grid-cols-5 gap-1 p-1 lg:hidden short:hidden" aria-label="Nawigacja">
           {tab('library', 'library', 'Biblioteka')}
           {tab('editor', 'wave', 'Edytor')}
           {tab('binaural', 'binaural', 'Binauralne')}
+          {tab('sway', 'sway', 'Bujanie')}
           {tab('projects', 'folder', 'Projekty')}
         </nav>
       </footer>

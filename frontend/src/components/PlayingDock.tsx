@@ -142,8 +142,8 @@ export function PlayingDock() {
 
   const active = waves.filter((w) => playing.includes(w.id))
   const fadingWaves = waves.filter((w) => fading.includes(w.id) && !playing.includes(w.id))
-  // W sekwencerze projekt ma własny pasek transportu – tu pokazujemy go tylko w zakładce binauralnej.
-  const showProject = mode === 'binaural' && (state === 'playing' || projectFading)
+  // W sekwencerze projekt ma własny pasek transportu – tu pokazujemy go w pozostałych zakładkach (Binauralne, Bujanie).
+  const showProject = mode !== 'sequencer' && (state === 'playing' || projectFading)
   const count = active.length + fadingWaves.length + (showProject ? 1 : 0) + (preview ? 1 : 0)
   if (!count) return null
 
