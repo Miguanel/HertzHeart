@@ -50,7 +50,7 @@ export function SharePanel({ onExportWav, exporting }: { onExportWav: () => void
 
   const nativeShare = async (url: string) => {
     try {
-      await navigator.share({ title: comp.title, text: `Projekt Hertz Hearth: ${comp.title}`, url })
+      await navigator.share({ title: comp.title, text: `Projekt Hertz Klekoty: ${comp.title}`, url })
     } catch {
       /* użytkownik anulował */
     }

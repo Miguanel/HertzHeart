@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { analyzeSway, fft, syntheticSamples, type MotionSample } from './analysis'
-import { FINDINGS, SOURCES, findingsFor } from './research'
+import { FINDINGS, SOURCES, findingsFor, sampleWave, waveWindow } from './research'
 
 describe('analiza bujania', () => {
   it('FFT daje prążek w odpowiednim miejscu', () => {
@@ -18,6 +18,19 @@ describe('analiza bujania', () => {
     expect(a.sway).not.toBeNull()
     expect(Math.abs(a.sway!.hz - hz)).toBeLessThan(0.005)
     expect(a.swayQuality).toBe('clear')
+  })
+
+  it('przy 5-minutowym nagraniu wykrywa bardzo wolny rytm 0,025 Hz', () => {
+    const a = analyzeSway(syntheticSamples({ seconds: 300, swayHz: 0.025, swayDegS: 3, noise: 0.3, seed: 11 }), 'gyro')!
+    expect(a.minHz!).toBeLessThan(0.02)
+    expect(Math.abs(a.sway!.hz - 0.025)).toBeLessThan(0.002)
+    expect(a.swayQuality).not.toBe('weak')
+  })
+
+  it('krótkie nagranie nie zgłasza rytmów wolniejszych niż 2 cykle', () => {
+    const a = analyzeSway(syntheticSamples({ seconds: 30, swayHz: 0.4 }), 'gyro')!
+    expect(a.minHz!).toBeGreaterThan(0.06)
+    expect(a.spectrum.hz[0]).toBeGreaterThanOrEqual(a.minHz! * 0.99)
   })
 
   it('oddziela szybkie drgania (drżenie fizjologiczne) od bujania', () => {
@@ -65,18 +78,28 @@ describe('analiza bujania', () => {
 })
 
 describe('interpretacje i źródła', () => {
-  it('każdy opis ma istniejące źródło z adresem https', () => {
+  it('każdy opis ma istniejące źródło z adresem https i falę do wykresu', () => {
     for (const f of FINDINGS) {
       expect(f.sources.length).toBeGreaterThan(0)
       for (const id of f.sources) expect(SOURCES[id]?.url).toMatch(/^https:\/\//)
+      expect(f.waves.filter((w) => w.main)).toHaveLength(1)
+      const T = waveWindow(f.waves)
+      for (const w of f.waves) {
+        const y = sampleWave(w, T, 120)
+        expect(y).toHaveLength(120)
+        expect(Math.max(...y.map(Math.abs))).toBeCloseTo(1, 6)
+        expect(y.every(Number.isFinite)).toBe(true)
+      }
     }
   })
 
   it('dobiera opisy do częstotliwości', () => {
-    expect(findingsFor(0.25, 'sway').map((f) => f.id)).toEqual(['visuo-vestibular', 'breathing', 'rocking-sleep', 'motion-sickness'])
+    expect(findingsFor(0.25, 'sway').map((f) => f.id)).toEqual(['visuo-vestibular', 'breathing', 'mdds', 'rocking-sleep', 'motion-sickness'])
     expect(findingsFor(2, 'sway').map((f) => f.id)).toEqual(['locomotion', 'proprioceptive'])
     expect(findingsFor(9.5, 'tremor').map((f) => f.id)).toEqual(['proprioceptive', 'tremor-physiological'])
     expect(findingsFor(6, 'tremor').map((f) => f.id)).toContain('tremor-4-8')
+    expect(findingsFor(0.02, 'sway').map((f) => f.id)).toContain('infraslow-brain')
     expect(findingsFor(6, 'sway')).toHaveLength(1)
+    expect(findingsFor(4.2, 'tremor').map((f) => f.id)).toContain('tremor-slow')
   })
 })

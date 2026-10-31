@@ -6,7 +6,7 @@ import type { SwayAnalysis } from '../sway/analysis'
 /** Sposób pomiaru: telefon w dłoni (bujanie telefonem) albo przy klatce piersiowej (postawa całego ciała). */
 export type SwayMode = 'hand' | 'body'
 
-export const SWAY_DURATIONS = [20, 30, 60, 120] as const
+export const SWAY_DURATIONS = [20, 30, 60, 120, 300, 600] as const
 export const HISTORY_LIMIT = 30
 
 export interface SwayMeasurement {

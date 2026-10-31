@@ -4,7 +4,7 @@ import { useBinaural } from '../store/binauralStore'
 import { SWAY_DURATIONS, useSway, type SwayMode } from '../store/swayStore'
 import { useUi } from '../store/uiStore'
 import { POSTURE_BANDS, SWAY_RANGE, TREMOR_RANGE, type PeakQuality, type SwayAnalysis } from '../sway/analysis'
-import { BANDS_SOURCES, FINDINGS, SOURCES, findingsFor, type Finding } from '../sway/research'
+import { BANDS_SOURCES, FINDINGS, SOURCES, findingsFor, sampleWave, waveWindow, type Finding } from '../sway/research'
 import { COUNTDOWN_S, useSwayMeasurement, type MeasureError, type MeasureState } from '../sway/useSwayMeasurement'
 import { Icon } from './icons'
 import { Button, IconButton, Panel } from './ui'
@@ -49,8 +49,76 @@ function SourceLink({ id, compact = false }: { id: string; compact?: boolean }) 
 }
 
 function rangeLabel(f: Finding) {
-  if (f.from <= 0.05) return `< ${f.to} Hz`
   return f.to >= 20 ? `> ${f.from} Hz` : `${f.from}–${f.to} Hz`
+}
+
+function windowLabel(T: number) {
+  if (T < 1) return `${Math.round(T * 1000)} ms`
+  return `${T < 10 ? T.toFixed(1).replace('.0', '') : Math.round(T)} s`
+}
+
+/**
+ * Miniwykres fal z badań, które potwierdzają dany zakres: fala główna w kolorze akcentu, porównawcze przygaszone.
+ * Każda fala na osobnym torze, wspólna oś czasu (ok. 3 cykle najwolniejszej fali).
+ */
+function StudyWaves({ f, accent }: { f: Finding; accent: string }) {
+  const [ref, w] = useWidth<HTMLDivElement>()
+  const lanes = useMemo(() => f.waves.slice(0, 3), [f])
+  const laneH = lanes.length === 1 ? 48 : 34
+  const h = laneH * lanes.length
+  const T = waveWindow(f.waves)
+  const paths = useMemo(() => {
+    if (!w) return []
+    const n = Math.min(400, Math.max(60, Math.round(w * 1.5)))
+    return lanes.map((wave, li) => {
+      const y = sampleWave(wave, T, n, li + 1)
+      // fala przesunięta lekko w dół – u góry toru jest podpis
+      const mid = li * laneH + laneH / 2 + 4
+      const amp = laneH / 2 - 7
+      return y.map((v, i) => `${i ? 'L' : 'M'}${((i / (n - 1)) * w).toFixed(1)},${(mid - v * amp).toFixed(1)}`).join('')
+    })
+  }, [w, lanes, T, laneH])
+  return (
+    <figure className="w-full shrink-0 sm:w-48" title={f.waveNote}>
+      <div ref={ref} className="w-full overflow-hidden rounded-lg border border-line/60 bg-black/40">
+        {w > 0 && (
+          <svg width={w} height={h} role="img" aria-label={f.waveNote}>
+            {lanes.map((wave, li) => (
+              <g key={li}>
+                {li > 0 && <line x1="0" x2={w} y1={li * laneH} y2={li * laneH} stroke="#1a2540" />}
+                <line x1="0" x2={w} y1={li * laneH + laneH / 2 + 4} y2={li * laneH + laneH / 2 + 4} stroke="#1a2540" strokeDasharray="2 3" />
+                <path
+                  d={paths[li]}
+                  fill="none"
+                  stroke={wave.main ? accent : '#7d8bab'}
+                  strokeOpacity={wave.main ? 1 : 0.8}
+                  strokeWidth={wave.main ? 1.6 : 1.2}
+                  style={wave.main ? { filter: `drop-shadow(0 0 3px ${accent})` } : undefined}
+                />
+                <text
+                  x="4"
+                  y={li * laneH + 10}
+                  fontSize="9"
+                  fontFamily="JetBrains Mono, monospace"
+                  fill={wave.main ? accent : '#9aa7c4'}
+                  stroke="#04060c"
+                  strokeWidth="3"
+                  strokeLinejoin="round"
+                  paintOrder="stroke"
+                >
+                  {wave.label}
+                </text>
+              </g>
+            ))}
+          </svg>
+        )}
+      </div>
+      <figcaption className="mt-0.5 flex items-center justify-between gap-2 text-[9px] uppercase tracking-wider text-muted">
+        <span>fala z badania</span>
+        <span className="font-mono normal-case">↔ {windowLabel(T)}</span>
+      </figcaption>
+    </figure>
+  )
 }
 
 function FindingCard({ f, accent = SWAY_COLOR, dim = false }: { f: Finding; accent?: string; dim?: boolean }) {
@@ -59,14 +127,17 @@ function FindingCard({ f, accent = SWAY_COLOR, dim = false }: { f: Finding; acce
       className={`space-y-2.5 rounded-xl border p-3 ${dim ? 'border-line/60 bg-white/[0.015]' : 'bg-white/[0.03]'}`}
       style={dim ? undefined : { borderColor: `color-mix(in oklab, ${accent} 40%, transparent)` }}
     >
-      <header className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span
-          className="shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] tabular-nums text-black"
-          style={{ background: accent }}
-        >
-          {rangeLabel(f)}
-        </span>
-        <h4 className="min-w-0 text-sm font-medium text-slate-100">{f.title}</h4>
+      <header className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <span
+            className="inline-block rounded-full px-2 py-0.5 font-mono text-[10px] tabular-nums text-black"
+            style={{ background: accent }}
+          >
+            {rangeLabel(f)}
+          </span>
+          <h4 className="text-sm font-medium leading-snug text-slate-100">{f.title}</h4>
+        </div>
+        <StudyWaves f={f} accent={accent} />
       </header>
       <p className="text-[13px] leading-relaxed text-slate-300">{f.text}</p>
       {f.caution && (
@@ -123,7 +194,7 @@ const ERRORS: Record<MeasureError, { title: string; text: ReactNode }> = {
   },
   nodata: {
     title: 'Nie wykryto żyroskopu ani akcelerometru',
-    text: 'To urządzenie nie przesyła danych o ruchu (zwykle komputer). Otwórz Hertz Hearth na telefonie – albo zobacz pokaz na danych symulowanych.',
+    text: 'To urządzenie nie przesyła danych o ruchu (zwykle komputer). Otwórz Hertz Klekoty na telefonie – albo zobacz pokaz na danych symulowanych.',
   },
   interrupted: {
     title: 'Pomiar przerwany',
@@ -334,6 +405,7 @@ function MeasureCard({ m }: { m: ReturnType<typeof useSwayMeasurement> }) {
           </div>
           <p className="text-center text-[11px] text-muted">
             Odliczanie {COUNTDOWN_S[mode]} s, potem sygnał dźwiękowy i wibracja na start i koniec.
+            {duration < 300 && <> Bardzo wolne rytmy (poniżej 0,05 Hz) wymagają pomiaru 5 lub 10 min.</>}
           </p>
         </>
       )}
@@ -343,7 +415,7 @@ function MeasureCard({ m }: { m: ReturnType<typeof useSwayMeasurement> }) {
 
 /* ───────────── wynik ───────────── */
 
-const TICKS = [0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20]
+const TICKS = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20]
 
 /** Widmo ruchu w skali log częstotliwości z pasmami posturograficznymi i zaznaczonymi szczytami. */
 function SpectrumChart({ a }: { a: SwayAnalysis }) {
@@ -351,11 +423,12 @@ function SpectrumChart({ a }: { a: SwayAnalysis }) {
   const h = 180
   const pad = { l: 8, r: 8, t: 22, b: 22 }
   const xMax = Math.max(4, a.spectrum.hz[a.spectrum.hz.length - 1] ?? 20)
-  const lx0 = Math.log(SWAY_RANGE[0])
+  const xMin = Math.max(SWAY_RANGE[0], a.spectrum.hz[0] ?? 0.05)
+  const lx0 = Math.log(xMin)
   const lx1 = Math.log(xMax)
   const iw = Math.max(1, w - pad.l - pad.r)
   const ih = h - pad.t - pad.b
-  const x = (hz: number) => pad.l + ((Math.log(Math.min(xMax, Math.max(SWAY_RANGE[0], hz))) - lx0) / (lx1 - lx0)) * iw
+  const x = (hz: number) => pad.l + ((Math.log(Math.min(xMax, Math.max(xMin, hz))) - lx0) / (lx1 - lx0)) * iw
   const maxP = Math.max(1e-12, ...a.spectrum.power)
   const DB = 45
   const y = (p: number) => pad.t + ih * Math.min(1, Math.max(0, -10 * Math.log10(Math.max(p, 1e-15) / maxP)) / DB)
@@ -420,7 +493,7 @@ function SpectrumChart({ a }: { a: SwayAnalysis }) {
                 </g>
               )
             })}
-            {TICKS.filter((t) => t <= xMax).map((t) => (
+            {TICKS.filter((t) => t <= xMax && t >= xMin * 0.98).map((t) => (
               <g key={t}>
                 <line x1={x(t)} x2={x(t)} y1={pad.t + ih} y2={pad.t + ih + 4} stroke="#7d8bab" />
                 <text
@@ -521,7 +594,7 @@ function ResultView({ state, onBinaural }: { state: MeasureState; onBinaural: (h
 
       {a.swayQuality === 'weak' && (
         <p className="text-xs leading-relaxed text-warn">
-          W zakresie 0,05–3,5 Hz nie widać jednego wyraźnego rytmu. Kołysz się równomiernie przez cały pomiar albo wybierz dłuższy czas.
+          W zakresie {hz3(a.minHz ?? 0.05)}–3.5 Hz nie widać jednego wyraźnego rytmu. Kołysz się równomiernie przez cały pomiar albo wybierz dłuższy czas.
           Średnia częstotliwość ruchu: {hz3(a.meanHz)} Hz.
         </p>
       )}
@@ -539,7 +612,11 @@ function ResultView({ state, onBinaural }: { state: MeasureState; onBinaural: (h
           value={tremorShown ? `${formatHz(a.tremor!.hz * 1000, 2)} Hz` : 'brak wyraźnych'}
           hint={`${Math.round(a.tremorShare * 100)}% mocy ruchu (${TREMOR_RANGE[0]}–${TREMOR_RANGE[1]} Hz)`}
         />
-        <Metric label="Rozdzielczość" value={`${formatHz(a.resolution * 1000, 3)} Hz`} hint="1 / czas nagrania; szczyt doprecyzowany do 0.001 Hz" />
+        <Metric
+          label="Rozdzielczość"
+          value={`${formatHz(a.resolution * 1000, 3)} Hz`}
+          hint={`1 / czas nagrania; najniższa mierzalna ${hz3(a.minHz ?? 0.05)} Hz`}
+        />
         <Metric
           label="Czujnik"
           value={`${a.source === 'gyro' ? 'żyroskop' : 'akcelerometr'} · ${a.fs} Hz`}
@@ -633,10 +710,10 @@ function FindingsPanel({ a }: { a: SwayAnalysis | null }) {
 /** Mapa opisanych zakresów na osi log 0,05–20 Hz. */
 function FrequencyMap() {
   const [ref, w] = useWidth<HTMLDivElement>()
-  const rowH = 14
+  const rowH = 9
   const rows = FINDINGS.length
   const h = rows * rowH + 22
-  const x = (hz: number) => 4 + ((Math.log(Math.max(0.05, Math.min(20, hz))) - Math.log(0.05)) / (Math.log(20) - Math.log(0.05))) * (w - 8)
+  const x = (hz: number) => 4 + ((Math.log(Math.max(0.01, Math.min(20, hz))) - Math.log(0.01)) / (Math.log(20) - Math.log(0.01))) * (w - 8)
   return (
     <div ref={ref} className="w-full overflow-hidden rounded-xl border border-line/60 bg-black/30 p-0">
       {w > 0 && (
@@ -648,7 +725,7 @@ function FrequencyMap() {
             return (
               <g key={f.id}>
                 <title>{`${f.title} (${rangeLabel(f)})`}</title>
-                <rect x={x0} y={6 + i * rowH} width={Math.max(3, x1 - x0)} height={rowH - 5} rx="4" fill={color} opacity="0.55" />
+                <rect x={x0} y={6 + i * rowH} width={Math.max(3, x1 - x0)} height={rowH - 3} rx="3" fill={color} opacity="0.55" />
               </g>
             )
           })}

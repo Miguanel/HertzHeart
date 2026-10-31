@@ -7,7 +7,7 @@
  *  2. usunięcie trendu liniowego w każdej osi,
  *  3. widmo mocy metodą Welcha (okno Hanna, 50% nakładania) – suma trzech osi, więc wynik nie zależy od tego,
  *     jak telefon jest obrócony,
- *  4. szczyt w zakresie bujania (0,05–3,5 Hz) i osobno w zakresie szybkich drgań (3,5–20 Hz), doprecyzowany
+ *  4. szczyt w zakresie bujania (0,01–3,5 Hz, zależnie od długości nagrania) i osobno w zakresie szybkich drgań (3,5–20 Hz), doprecyzowany
  *     transformatą DTFT całego nagrania (krok 0,0005 Hz + interpolacja paraboliczna),
  *  5. udziały pasm posturograficznych liczone w dziedzinie kąta (moc prędkości / (2πf)²) – tak jak w badaniach,
  *     które analizują przemieszczenie, a nie prędkość.
@@ -28,7 +28,7 @@ export interface SpectrumPeak {
   hz: number
   /** Wyrazistość: moc szczytu / mediana mocy w przeszukiwanym zakresie (szum: ok. 1,5–3). */
   prominence: number
-  /** Udział mocy (prędkości) w paśmie ±2 prążki wokół szczytu względem całego zakresu 0,05–20 Hz. */
+  /** Udział mocy (prędkości) w paśmie ±2 prążki wokół szczytu względem całego zakresu f_min–20 Hz. */
   share: number
   /** Amplituda prędkości w paśmie szczytu (°/s albo m/s²). */
   amplitude: number
@@ -41,7 +41,7 @@ export interface BandShare {
   label: string
   from: number
   to: number
-  /** Udział w mocy przemieszczenia (kąta) w zakresie 0,05–20 Hz, 0–1. */
+  /** Udział w mocy przemieszczenia (kąta) w zakresie f_min–20 Hz, 0–1. */
   share: number
 }
 
@@ -53,7 +53,7 @@ export interface SwayAnalysis {
   duration: number
   /** Rozdzielczość widma całego nagrania (1/T) [Hz]. */
   resolution: number
-  /** Główny wynik: rytm bujania w zakresie 0,05–3,5 Hz (null, gdy nagranie za krótkie). */
+  /** Główny wynik: rytm bujania w zakresie f_min–3,5 Hz (f_min = najniższa mierzalna częstotliwość, zależna od czasu nagrania). */
   sway: SpectrumPeak | null
   swayQuality: PeakQuality
   /** Średnia częstotliwość (centroid widma prędkości) w zakresie bujania [Hz]. */
@@ -66,21 +66,24 @@ export interface SwayAnalysis {
   bands: BandShare[]
   /** Szacowane wychylenie (amplituda kąta) przy szczycie bujania [°] – tylko dla żyroskopu. */
   swayAngleDeg: number | null
-  /** RMS prędkości kątowej (°/s) lub przyspieszenia (m/s²) w zakresie 0,05–20 Hz. */
+  /** RMS prędkości kątowej (°/s) lub przyspieszenia (m/s²) w zakresie f_min–20 Hz. */
   rms: number
   /** Widmo do wykresu (skala log częstotliwości, ≤ 240 punktów): częstotliwość [Hz] i moc prędkości. */
   spectrum: { hz: number[]; power: number[] }
   /** Najdłuższa przerwa w danych [s] – duża oznacza np. zablokowany ekran w trakcie pomiaru. */
   maxGap: number
+  /** Najniższa mierzalna częstotliwość tego nagrania [Hz] (brak w zapisach sprzed października 2026). */
+  minHz?: number
 }
 
-export const SWAY_RANGE: [number, number] = [0.05, 3.5]
+/** Zakres bujania [Hz]. Dolna granica wymaga długiego pomiaru (co najmniej 2 cykle – 0,01 Hz to 200 s). */
+export const SWAY_RANGE: [number, number] = [0.01, 3.5]
 export const TREMOR_RANGE: [number, number] = [3.5, 20]
 const ANALYSIS_MAX = 20
 
 /** Pasma posturograficzne (Paillard i Noé 2015: wzrokowo-błędnikowe < 0,5 Hz, móżdżkowe 0,5–2 Hz, proprioceptywne > 2 Hz). */
 export const POSTURE_BANDS: Omit<BandShare, 'share'>[] = [
-  { id: 'low', label: 'Niskie · wzrok i błędnik', from: 0.05, to: 0.5 },
+  { id: 'low', label: 'Niskie · wzrok i błędnik', from: 0.01, to: 0.5 },
   { id: 'mid', label: 'Średnie · móżdżek', from: 0.5, to: 2 },
   { id: 'high', label: 'Wysokie · czucie głębokie', from: 2, to: ANALYSIS_MAX },
 ]
@@ -324,8 +327,10 @@ export function analyzeSway(samples: MotionSample[], source: MotionSource): Sway
   const n = axes[0].length
   const fMax = Math.min(ANALYSIS_MAX, fs / 2 - 1)
 
-  // segment Welcha: do 20 s (rozdzielczość ≥ 0,025 Hz po uzupełnieniu zerami), ale co najmniej 2 segmenty przy dłuższych nagraniach
-  const segment = Math.min(n, Math.round(fs * Math.min(20, Math.max(8, duration / 1.5))))
+  // segment Welcha: przy krótkich nagraniach do 20 s; od 1,5 min dłuższy (1/3 nagrania, maks. 200 s), żeby rozróżnić
+  // bardzo wolne rytmy (0,01–0,05 Hz), a jednocześnie uśrednić kilka segmentów
+  const segSec = duration >= 90 ? Math.min(200, duration / 3) : Math.min(20, Math.max(8, duration / 1.5))
+  const segment = Math.min(n, Math.round(fs * segSec))
   let hz: Float64Array | null = null
   let psd: Float64Array | null = null
   let df = 0
@@ -339,7 +344,8 @@ export function analyzeSway(samples: MotionSample[], source: MotionSource): Sway
   }
   if (!psd || !hz) return null
 
-  const fMin = Math.max(SWAY_RANGE[0], 2 / duration) // co najmniej dwa pełne cykle w nagraniu
+  // co najmniej dwa pełne cykle w nagraniu i jeden w segmencie widma
+  const fMin = Math.max(SWAY_RANGE[0], 2 / duration, 1 / (segment / fs))
   let total = 0
   for (let k = 0; k < hz.length; k++) if (hz[k] >= fMin && hz[k] <= fMax) total += psd[k] * df
 
@@ -377,10 +383,10 @@ export function analyzeSway(samples: MotionSample[], source: MotionSource): Sway
   }
   const bands = POSTURE_BANDS.map((b, i) => ({ ...b, share: dispTotal > 0 ? disp[i] / dispTotal : 0 }))
 
-  // widmo do wykresu: przedziały logarytmiczne 0,05–20 Hz (maksimum w przedziale, żeby nie zgubić wąskiego szczytu)
+  // widmo do wykresu: przedziały logarytmiczne f_min–20 Hz (maksimum w przedziale, żeby nie zgubić wąskiego szczytu)
   const spectrum = { hz: [] as number[], power: [] as number[] }
   const points = 240
-  const lo = Math.log(SWAY_RANGE[0])
+  const lo = Math.log(fMin)
   const hi = Math.log(Math.max(fMax, 4))
   for (let i = 0; i < points; i++) {
     const a = Math.exp(lo + ((hi - lo) * i) / points)
@@ -423,6 +429,7 @@ export function analyzeSway(samples: MotionSample[], source: MotionSource): Sway
     rms: Math.sqrt(total),
     spectrum,
     maxGap: r.maxGap,
+    minHz: fMin,
   }
 }
 
