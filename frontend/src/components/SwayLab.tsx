@@ -194,7 +194,7 @@ const ERRORS: Record<MeasureError, { title: string; text: ReactNode }> = {
   },
   nodata: {
     title: 'Nie wykryto żyroskopu ani akcelerometru',
-    text: 'To urządzenie nie przesyła danych o ruchu (zwykle komputer). Otwórz Hertz Klekoty na telefonie – albo zobacz pokaz na danych symulowanych.',
+    text: 'To urządzenie nie przesyła danych o ruchu (zwykle komputer). Otwórz Herc Klekoty na telefonie – albo zobacz pokaz na danych symulowanych.',
   },
   interrupted: {
     title: 'Pomiar przerwany',

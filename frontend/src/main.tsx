@@ -9,7 +9,7 @@ import './store/pwaInstall' // nasłuch zdarzenia instalacji musi działać od s
 // Tryb autoUpdate: gdy na serwerze jest nowa wersja, service worker ją pobiera i strona się przeładowuje.
 registerSW({ immediate: true })
 
-console.info(`[Hertz Klekoty] wersja z ${APP_BUILD}`)
+console.info(`[Herc Klekoty] wersja z ${APP_BUILD}`)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

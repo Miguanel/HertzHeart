@@ -18,9 +18,9 @@ export default defineConfig({
       injectRegister: false,
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
-        name: 'Hertz Klekoty – Herce Serca',
-        short_name: 'Hertz Klekoty',
-        description: 'Herce Serca – sekwencer częstotliwości, fale binauralne i diagramy głośności.',
+        name: 'Herc Klekoty',
+        short_name: 'Herc Klekoty',
+        description: 'Herc Klekoty – sekwencer częstotliwości, fale binauralne i diagramy głośności.',
         lang: 'pl',
         start_url: '/',
         display: 'standalone',

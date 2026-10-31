@@ -86,7 +86,7 @@ export const useTour = create<TourState>()((set, get) => ({
       history.replaceState(null, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`)
     }
     const seen = readSeen()
-    console.info(`[Hertz Klekoty] poradnik: ${forced ? 'wymuszony adresem ?poradnik' : seen ? 'pominięty – już widziany na tym urządzeniu' : 'pokazany (pierwsza wizyta)'}`)
+    console.info(`[Herc Klekoty] poradnik: ${forced ? 'wymuszony adresem ?poradnik' : seen ? 'pominięty – już widziany na tym urządzeniu' : 'pokazany (pierwsza wizyta)'}`)
     if ((forced || !seen) && get().phase === 'closed') set({ phase: 'welcome' })
   },
 

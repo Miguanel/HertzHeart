@@ -23,7 +23,7 @@ function Logo() {
       </svg>
       <span className="hidden flex-col leading-none sm:flex max-lg:short:hidden!">
         <span className="neon-text font-display text-[13px] tracking-[0.28em] text-neon">
-          HERTZ<span className="text-plasma">//</span>Klekoty
+          HERTZ<span className="text-plasma">//</span>HEARTH
         </span>
         <span className="mt-1 text-[9px] uppercase tracking-[0.42em] text-plasma/80">herce serca</span>
       </span>
